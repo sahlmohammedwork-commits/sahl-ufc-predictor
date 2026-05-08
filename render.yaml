@@ -4,18 +4,13 @@ services:
     runtime: python
     region: oregon
     plan: free
-    buildCommand: |
-      pip install -r requirements.txt
-      cd backend && python features.py && python train.py
+    buildCommand: pip install -r requirements.txt
     startCommand: cd backend && uvicorn server:app --host 0.0.0.0 --port $PORT
     envVars:
       - key: PYTHON_VERSION
         value: 3.11.9
     autoDeploy: true
 
-  # Weekly auto-update: scrape new UFC events, retrain, push to GitHub.
-  # Render's network reaches ufcstats.com fine, so this works even when
-  # your local network blocks the site. Runs every Monday at 08:00 UTC.
   - type: cron
     name: sahl-weekly-update
     runtime: python
