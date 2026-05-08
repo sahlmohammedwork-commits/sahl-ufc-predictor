@@ -730,7 +730,6 @@ footer a:hover { color: var(--gold); }
 <div class="tabs fadeUp delay-3">
   <div class="tab active" data-tab="single">Single Fight</div>
   <div class="tab" data-tab="card">Full Card</div>
-  <div class="tab" data-tab="backtest">Track Record</div>
   <div class="tab" data-tab="how">How It Works</div>
 </div>
 
@@ -822,22 +821,6 @@ footer a:hover { color: var(--gold); }
 <div id="card-output"></div>
 </div>
 
-<div id="tab-backtest" class="tab-content" style="display:none">
-<div class="panel">
-  <h2><span class="num">04</span> Track Record</h2>
-  <p style="color:var(--muted); font-size: 13.5px; margin-bottom: 22px; line-height: 1.55;">Sahl's performance simulated over historical UFC fights with real Vegas odds. <strong style="color:var(--ink-2)">Out-of-sample only</strong> — the model never saw these fights during training.</p>
-
-  <div class="honesty-callout">
-    <strong>HONEST FRAMING</strong>
-    These numbers reflect what would have happened betting Sahl's positive-EV picks with Half-Kelly stakes against historical sportsbook lines. UFC betting markets are sharp — even a well-calibrated model often runs slightly negative ROI net of the vig. Use Sahl as an analytical edge for your own decisions, not as a guaranteed profit machine.
-  </div>
-
-  <div id="backtest-content">
-    <div class="placeholder"><div class="big">Loading...</div></div>
-  </div>
-</div>
-</div>
-
 <div id="tab-how" class="tab-content" style="display:none">
 <div class="panel">
   <h2><span class="num">?</span> How Sahl Works</h2>
@@ -902,10 +885,9 @@ let cardFights = [];
 
 async function init() {
   try {
-    const [fighters, metrics, backtest] = await Promise.all([
+    const [fighters, metrics] = await Promise.all([
       fetch(API + "/api/fighters?limit=5000").then(r => r.json()),
       fetch(API + "/api/metrics").then(r => r.json()).catch(() => ({})),
-      fetch(API + "/api/backtest").then(r => r.json()).catch(() => ({available: false})),
     ]);
     FIGHTERS = fighters;
     document.getElementById("m-fighters").textContent = fighters.length.toLocaleString();
@@ -919,11 +901,6 @@ async function init() {
     }
     if (metrics.test_n) {
       document.getElementById("m-fights").textContent = (metrics.test_n * 7).toLocaleString();
-    }
-    if (backtest.available) {
-      renderBacktest(backtest);
-    } else {
-      document.getElementById("backtest-content").innerHTML = `<div class="placeholder"><div class="big">No backtest yet</div><div class="small">Run <code style="color:var(--gold)">python backend/backtest.py</code> on your machine.</div></div>`;
     }
   } catch(e) {
     showToast("Backend offline — start server.py first");
@@ -1113,56 +1090,6 @@ document.getElementById("run-card").addEventListener("click", async () => {
     out.innerHTML = `<div class="placeholder"><div class="big" style="color:var(--red)">ERROR</div></div>`;
   }
 });
-
-function renderBacktest(b) {
-  const profit = b.total_pl, roi = b.roi_pct;
-  const yearsHtml = Object.entries(b.yearly).map(([y, s]) => {
-    const profitClass = s.profit >= 0 ? 'pos' : 'neg';
-    return `<tr><td>${y}</td><td>${s.bets}</td><td>${(s.win_rate*100).toFixed(1)}%</td><td class="${profitClass}">${s.profit >= 0 ? '+' : ''}$${s.profit.toFixed(2)}</td></tr>`;
-  }).join("");
-  const points = b.history.slice(0, 1500);
-  const xMax = Math.max(points.length - 1, 1);
-  const yVals = points.map(p => p.bankroll);
-  const yMin = Math.min(...yVals);
-  const yMax = Math.max(...yVals);
-  const yRange = yMax - yMin || 1;
-  const W = 100, H = 40;
-  const pathStr = points.map((p, i) =>
-    `${i === 0 ? 'M' : 'L'} ${(i/xMax*W).toFixed(2)} ${(H - (p.bankroll - yMin)/yRange * H).toFixed(2)}`
-  ).join(' ');
-  const startBR = b.starting_bankroll;
-  const startY = H - (startBR - yMin)/yRange * H;
-
-  const html = `
-    <div class="backtest-grid">
-      <div class="bt-card"><div class="v" style="color: ${profit >= 0 ? 'var(--green)' : 'var(--red-glow)'}">${profit >= 0 ? '+' : ''}$${Math.round(profit)}</div><div class="l">Total P&L</div></div>
-      <div class="bt-card"><div class="v" style="color: ${roi >= 0 ? 'var(--green)' : 'var(--red-glow)'}">${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%</div><div class="l">ROI</div></div>
-      <div class="bt-card"><div class="v" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">${(b.win_rate*100).toFixed(1)}%</div><div class="l">Pick Win Rate</div></div>
-      <div class="bt-card"><div class="v">${b.bets_placed}</div><div class="l">Bets Simulated</div></div>
-      <div class="bt-card"><div class="v" style="color:var(--red-glow)">-${b.max_drawdown_pct.toFixed(1)}%</div><div class="l">Max Drawdown</div></div>
-      <div class="bt-card"><div class="v" style="color:var(--gold)">$${Math.round(b.peak_bankroll)}</div><div class="l">Peak Bankroll</div></div>
-    </div>
-
-    <div class="bt-chart">
-      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:12px;font-weight:600">Bankroll over time · ${b.test_window}</div>
-      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:220px;display:block">
-        <line x1="0" x2="${W}" y1="${startY}" y2="${startY}" stroke="var(--muted)" stroke-width="0.2" stroke-dasharray="1 1"/>
-        <path d="${pathStr}" stroke="${profit >= 0 ? 'var(--green)' : 'var(--red-glow)'}" stroke-width="0.6" fill="none" vector-effect="non-scaling-stroke"/>
-      </svg>
-      <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:10px;font-weight:500">
-        <span>$${b.starting_bankroll}</span>
-        <span style="color: ${profit >= 0 ? 'var(--green)' : 'var(--red-glow)'}">$${Math.round(b.final_bankroll)}</span>
-      </div>
-    </div>
-
-    <h3 style="font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:0.05em;margin-top:26px;margin-bottom:10px;font-weight:400">Year-by-Year</h3>
-    <table class="year-table">
-      <tr><th>Year</th><th>Bets</th><th>Win %</th><th>P&L</th></tr>
-      ${yearsHtml}
-    </table>
-  `;
-  document.getElementById("backtest-content").innerHTML = html;
-}
 
 async function openFighter(name) {
   document.getElementById("modal-bg").classList.add("open");
