@@ -94,14 +94,30 @@ def fetch_upcoming_with_odds() -> dict:
     if not events:
         return {"event": None, "fights": [], "error": "No upcoming UFC events", "source": "live"}
 
-    # Sort by commence_time ascending — earliest first
+    # Sort by commence_time ascending
     events.sort(key=lambda e: e.get("commence_time", ""))
 
-    fights = []
-    earliest_date = events[0].get("commence_time", "")[:10] if events else ""
-    same_day_events = [e for e in events if e.get("commence_time", "")[:10] == earliest_date]
+    # Group fights by event: assume fights within 12 hours of the earliest are
+    # the same UFC card (UFC main events run late and cross UTC midnight).
+    from datetime import datetime, timezone, timedelta
+    earliest_str = events[0].get("commence_time", "")
+    try:
+        earliest_dt = datetime.fromisoformat(earliest_str.replace("Z", "+00:00"))
+    except Exception:
+        earliest_dt = datetime.now(timezone.utc)
+    cutoff = earliest_dt + timedelta(hours=12)
 
-    for ev in same_day_events:
+    same_card_events = []
+    for e in events:
+        try:
+            ev_dt = datetime.fromisoformat(e.get("commence_time", "").replace("Z", "+00:00"))
+        except Exception:
+            continue
+        if ev_dt <= cutoff:
+            same_card_events.append(e)
+
+    fights = []
+    for ev in same_card_events:
         home = ev.get("home_team", "")
         away = ev.get("away_team", "")
         commence = ev.get("commence_time", "")
@@ -136,10 +152,11 @@ def fetch_upcoming_with_odds() -> dict:
             "num_books": max(len(prices_home), len(prices_away)),
         })
 
+    earliest_date_str = earliest_dt.strftime("%Y-%m-%d")
     payload = {
         "event": {
-            "name": f"UFC Card · {earliest_date}",
-            "date": earliest_date,
+            "name": f"UFC Card · {earliest_date_str}",
+            "date": earliest_date_str,
             "location": "Multiple sportsbooks",
         },
         "fights": fights,
