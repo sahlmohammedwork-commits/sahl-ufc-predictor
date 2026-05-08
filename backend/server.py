@@ -317,6 +317,74 @@ def upcoming():
         return {"event": None, "fights": [], "error": str(e)}
 
 
+@app.get("/api/backtest")
+def backtest():
+    """Returns historical backtest results (P&L, win rate, ROI, drawdown)."""
+    bt_path = ROOT / "data" / "backtest_results.json"
+    if not bt_path.exists():
+        return {"available": False, "note": "Run backend/backtest.py to generate."}
+    with open(bt_path) as f:
+        return {"available": True, **json.load(f)}
+
+
+@app.get("/api/fighter/{name}")
+def fighter_profile(name: str):
+    """Detailed fighter card: career stats, Elo, recent form, top SHAP signals."""
+    s = bundle.state.get(name)
+    if not s:
+        raise HTTPException(404, f"Fighter '{name}' not found")
+    elo = bundle.elo.get(name, 1500.0)
+    sec = max(s.get("sec_in_cage", 0), 1)
+    minutes = sec / 60.0
+    return {
+        "name": name,
+        "elo": round(elo, 1),
+        "record": {
+            "fights": s.get("fights", 0),
+            "wins": s.get("wins", 0),
+            "losses": s.get("losses", 0),
+            "win_pct": round(s.get("wins", 0) / max(s.get("fights", 1), 1), 3),
+            "current_streak": s.get("streak", 0),
+            "last_5": s.get("last_5", []),
+        },
+        "striking": {
+            "slpm": round(s.get("sig_str_lnd", 0) / minutes, 2),
+            "sapm": round(s.get("sig_str_lnd_against", 0) / minutes, 2),
+            "str_acc": round(s.get("sig_str_lnd", 0) / max(s.get("sig_str_att", 1), 1), 3),
+            "str_def": round(1 - s.get("sig_str_lnd_against", 0) / max(s.get("sig_str_att_against", 1), 1), 3),
+            "kd_per15": round(s.get("kd", 0) / minutes * 15, 2),
+        },
+        "grappling": {
+            "td_per15": round(s.get("td_lnd", 0) / minutes * 15, 2),
+            "td_acc": round(s.get("td_lnd", 0) / max(s.get("td_att", 1), 1), 3),
+            "td_def": round(1 - s.get("td_lnd_against", 0) / max(s.get("td_att_against", 1), 1), 3),
+            "ctrl_pct": round(s.get("ctrl_sec", 0) / sec, 3),
+            "sub_per15": round(s.get("sub_att", 0) / minutes * 15, 2),
+        },
+        "last_fight_date": s.get("last_fight_date"),
+    }
+
+
+@app.get("/api/search")
+def search_fighters(q: str = "", limit: int = 12):
+    """Fast fighter autocomplete by name fragment."""
+    q = q.lower().strip()
+    if len(q) < 1:
+        return []
+    matches = []
+    for name, elo in bundle.elo.items():
+        if q in name.lower():
+            s = bundle.state.get(name, {})
+            matches.append({
+                "name": name,
+                "elo": round(elo, 1),
+                "record": f"{s.get('wins', 0)}-{s.get('losses', 0)}",
+                "fights": s.get("fights", 0),
+            })
+    matches.sort(key=lambda x: (-x["fights"], -x["elo"]))
+    return matches[:limit]
+
+
 def _predict_one(f: FightInput) -> PredictionOut:
     X = build_row(
         f.fighter_a, f.fighter_b, f.weight_class, f.title_bout,

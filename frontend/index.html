@@ -3,24 +3,32 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Sahl UFC Predictor</title>
+<meta name="description" content="Sahl — calibrated UFC fight probabilities, EV math, and fighter analytics. Make smarter calls.">
+<title>Sahl — UFC Fight Analytics</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #0a0a0c;
-  --bg-2: #111114;
-  --bg-3: #16161b;
-  --line: #26262e;
-  --ink: #f4f4f5;
+  --bg: #0b0b0e;
+  --bg-2: #131318;
+  --bg-3: #1a1a21;
+  --bg-4: #21212a;
+  --line: #28282f;
+  --line-2: #34343c;
+  --ink: #f5f5f7;
+  --ink-2: #c4c4cc;
   --muted: #8a8a92;
+  --muted-2: #5a5a62;
   --red: #e63946;
   --red-glow: #ff4d5e;
   --gold: #f4c430;
+  --gold-warm: #e0a82e;
   --green: #2ecc71;
-  --blue: #4cc9f0;
+  --green-deep: #1e8449;
+  --accent: #ff6b35;
   --grad: linear-gradient(135deg, #e63946 0%, #f4c430 100%);
+  --grad-warm: linear-gradient(135deg, #ff6b35 0%, #f4c430 100%);
 }
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -28,33 +36,32 @@
 html, body {
   background: var(--bg);
   color: var(--ink);
-  font-family: 'Archivo', sans-serif;
+  font-family: 'Inter', system-ui, sans-serif;
   font-size: 15px;
-  line-height: 1.5;
+  line-height: 1.55;
   -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
   overflow-x: hidden;
 }
 
-/* Grain background overlay */
 body::before {
   content: "";
   position: fixed; inset: 0;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2' /%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.3 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.85' numOctaves='2' /%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.25 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.45'/%3E%3C/svg%3E");
   pointer-events: none;
-  opacity: 0.5;
+  opacity: 0.4;
   z-index: 1;
   mix-blend-mode: overlay;
 }
 
-/* Subtle radial backlight */
 body::after {
   content: "";
   position: fixed;
-  top: -10%; left: 50%;
+  top: -15%; left: 50%;
   transform: translateX(-50%);
-  width: 1200px; height: 600px;
-  background: radial-gradient(ellipse at center, rgba(230,57,70,0.18) 0%, transparent 65%);
-  filter: blur(40px);
+  width: 1400px; height: 700px;
+  background: radial-gradient(ellipse at center, rgba(230,57,70,0.12) 0%, rgba(244,196,48,0.04) 35%, transparent 65%);
+  filter: blur(50px);
   pointer-events: none;
   z-index: 0;
 }
@@ -64,23 +71,32 @@ body::after {
   z-index: 2;
   max-width: 1280px;
   margin: 0 auto;
-  padding: 32px 28px 80px;
+  padding: 28px 32px 100px;
 }
 
-/* ---------- HEADER ---------- */
+@media (max-width: 700px) { .wrap { padding: 20px 18px 60px; } }
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fadeUp { animation: fadeUp 0.5s cubic-bezier(.2,.8,.2,1) backwards; }
+.delay-1 { animation-delay: 0.06s; }
+.delay-2 { animation-delay: 0.12s; }
+.delay-3 { animation-delay: 0.18s; }
+.delay-4 { animation-delay: 0.24s; }
+
 header {
   display: flex;
   align-items: center;
   justify-content: space-between;
   border-bottom: 1px solid var(--line);
-  padding-bottom: 22px;
+  padding-bottom: 20px;
   margin-bottom: 36px;
-}
-.brand {
-  display: flex;
-  align-items: baseline;
+  flex-wrap: wrap;
   gap: 14px;
 }
+.brand { display: flex; align-items: baseline; gap: 14px; }
 .brand .mark {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 38px;
@@ -97,44 +113,43 @@ header {
   font-size: 11px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
+  font-weight: 500;
 }
 .status {
   display: flex;
-  gap: 22px;
+  gap: 18px;
   align-items: center;
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   color: var(--muted);
   letter-spacing: 0.1em;
   text-transform: uppercase;
+  font-weight: 500;
 }
 .status .dot {
   display: inline-block;
   width: 7px; height: 7px;
   border-radius: 50%;
   background: var(--green);
-  margin-right: 6px;
-  box-shadow: 0 0 8px var(--green);
-  animation: pulse 2s ease-in-out infinite;
+  margin-right: 7px;
+  box-shadow: 0 0 10px var(--green);
+  animation: pulse 2.4s ease-in-out infinite;
 }
-@keyframes pulse { 50% { opacity: 0.4; } }
+@keyframes pulse { 50% { opacity: 0.35; } }
+@media (max-width: 700px) { .status { font-size: 10px; gap: 12px; } .brand .mark { font-size: 32px; } }
 
-/* ---------- HERO STRIP ---------- */
 .hero {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  gap: 30px;
-  align-items: end;
-  margin-bottom: 38px;
-  padding-bottom: 30px;
+  margin-bottom: 36px;
+  padding-bottom: 32px;
   border-bottom: 1px solid var(--line);
 }
 .hero h1 {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(54px, 7vw, 96px);
-  letter-spacing: 0.01em;
-  line-height: 0.92;
+  font-size: clamp(54px, 8vw, 102px);
+  letter-spacing: 0.005em;
+  line-height: 0.9;
   text-transform: uppercase;
+  font-weight: 400;
 }
 .hero h1 .accent {
   color: var(--red);
@@ -145,82 +160,166 @@ header {
   content: "";
   position: absolute;
   left: 0; right: 0; bottom: 8%;
-  height: 3px;
+  height: 4px;
   background: var(--gold);
 }
-.hero .sub {
-  font-family: 'Archivo', sans-serif;
-  color: var(--muted);
-  font-size: 16px;
-  max-width: 540px;
-  margin-top: 14px;
+.hero .lead {
+  color: var(--ink-2);
+  font-size: 17px;
+  max-width: 680px;
+  margin-top: 18px;
+  line-height: 1.6;
+  font-weight: 400;
 }
-.metrics-strip {
-  display: flex;
-  gap: 18px;
+.hero .lead strong { color: var(--ink); font-weight: 600; }
+.hero .micro {
+  color: var(--muted);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  letter-spacing: 0.12em;
+  margin-top: 14px;
+  text-transform: uppercase;
+}
+
+.metrics-band {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 1px;
+  background: var(--line);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  overflow: hidden;
+  margin-bottom: 36px;
 }
 .metric {
-  text-align: right;
-  border-right: 1px solid var(--line);
-  padding-right: 18px;
+  background: var(--bg-2);
+  padding: 20px 18px;
+  text-align: left;
+  position: relative;
+  transition: background 0.2s;
 }
-.metric:last-child { border-right: none; padding-right: 0; }
+.metric:hover { background: var(--bg-3); }
 .metric .num {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 46px;
+  font-size: 42px;
   line-height: 1;
-  background: var(--grad);
-  -webkit-background-clip: text;
-  background-clip: text;
-  color: transparent;
+  letter-spacing: 0.005em;
+  font-weight: 400;
 }
+.metric .num.gold { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.metric .num.green { color: var(--green); }
+.metric .num.red { color: var(--red-glow); }
 .metric .lbl {
   font-family: 'JetBrains Mono', monospace;
   text-transform: uppercase;
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.15em;
-  margin-top: 4px;
+  margin-top: 8px;
+  display: flex; align-items: center; gap: 6px;
+  font-weight: 500;
+}
+.info-icon {
+  cursor: help;
+  width: 13px; height: 13px;
+  border-radius: 50%;
+  border: 1px solid var(--muted-2);
+  color: var(--muted-2);
+  display: inline-flex;
+  align-items: center; justify-content: center;
+  font-size: 9px;
+  font-style: italic;
+  position: relative;
+  font-family: serif;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s;
+}
+.info-icon:hover { color: var(--gold); border-color: var(--gold); }
+.info-icon:hover .tooltip { display: block; }
+.tooltip {
+  display: none;
+  position: absolute;
+  top: 18px; left: -8px;
+  background: var(--bg-4);
+  border: 1px solid var(--line-2);
+  border-radius: 6px;
+  padding: 10px 12px;
+  width: 220px;
+  font-family: 'Inter', sans-serif;
+  font-size: 12px;
+  font-weight: 400;
+  line-height: 1.5;
+  color: var(--ink);
+  letter-spacing: normal;
+  text-transform: none;
+  z-index: 30;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
 }
 
-/* ---------- LAYOUT ---------- */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 28px;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+.tabs::-webkit-scrollbar { display: none; }
+.tab {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 17px;
+  letter-spacing: 0.08em;
+  padding: 13px 22px;
+  cursor: pointer;
+  color: var(--muted);
+  position: relative;
+  white-space: nowrap;
+  transition: color 0.18s;
+  font-weight: 400;
+}
+.tab:hover { color: var(--ink-2); }
+.tab.active { color: var(--ink); }
+.tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--red);
+}
+
 .grid {
   display: grid;
-  grid-template-columns: 420px 1fr;
-  gap: 30px;
+  grid-template-columns: 440px 1fr;
+  gap: 28px;
 }
-@media (max-width: 980px) {
-  .grid { grid-template-columns: 1fr; }
-  .hero { grid-template-columns: 1fr; }
-  .metrics-strip { justify-content: flex-start; }
-}
+@media (max-width: 1000px) { .grid { grid-template-columns: 1fr; } }
 
 .panel {
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 22px;
+  border-radius: 6px;
+  padding: 24px;
 }
 .panel h2 {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px;
-  letter-spacing: 0.08em;
-  margin-bottom: 16px;
+  font-size: 23px;
+  letter-spacing: 0.06em;
+  margin-bottom: 18px;
   display: flex;
   align-items: center;
   gap: 10px;
+  font-weight: 400;
 }
 .panel h2 .num {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   color: var(--red);
   border: 1px solid var(--red);
-  padding: 2px 7px;
-  border-radius: 2px;
+  padding: 3px 8px;
+  border-radius: 3px;
   letter-spacing: 0.1em;
+  font-weight: 600;
 }
 
-/* ---------- FORM ---------- */
 .form-row { margin-bottom: 14px; }
 .form-row label {
   display: block;
@@ -229,29 +328,31 @@ header {
   font-size: 10px;
   color: var(--muted);
   letter-spacing: 0.15em;
-  margin-bottom: 6px;
+  margin-bottom: 7px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 .form-row input, .form-row select {
   width: 100%;
   background: var(--bg-3);
   border: 1px solid var(--line);
   color: var(--ink);
-  padding: 11px 12px;
-  font-family: 'Archivo', sans-serif;
+  padding: 12px 14px;
+  font-family: 'Inter', sans-serif;
   font-size: 14px;
-  border-radius: 2px;
+  border-radius: 4px;
   transition: border-color 0.15s, box-shadow 0.15s;
+  font-weight: 500;
 }
 .form-row input:focus, .form-row select:focus {
   outline: none;
   border-color: var(--red);
-  box-shadow: 0 0 0 3px rgba(230,57,70,0.18);
+  box-shadow: 0 0 0 3px rgba(230,57,70,0.16);
 }
-.row-2 {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
+.form-row input::placeholder { color: var(--muted-2); font-weight: 400; }
+.row-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .row-2 .form-row { margin-bottom: 0; }
 
 .btn {
@@ -259,53 +360,69 @@ header {
   background: var(--grad);
   color: #0a0a0c;
   border: none;
-  padding: 14px;
+  padding: 15px;
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 18px;
+  font-size: 19px;
   letter-spacing: 0.1em;
-  border-radius: 2px;
+  border-radius: 4px;
   cursor: pointer;
-  margin-top: 8px;
-  transition: transform 0.1s, box-shadow 0.2s;
-  position: relative;
-  overflow: hidden;
+  margin-top: 10px;
+  transition: transform 0.12s, box-shadow 0.22s;
+  font-weight: 700;
 }
-.btn:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 8px 24px rgba(230,57,70,0.4);
-}
+.btn:hover { transform: translateY(-1px); box-shadow: 0 10px 28px rgba(230,57,70,0.35); }
 .btn:active { transform: translateY(0); }
-.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; transform: none; box-shadow: none; }
+.btn.secondary {
+  background: var(--bg-3);
+  color: var(--ink);
+  border: 1px solid var(--line);
+  font-weight: 500;
+}
+.btn.secondary:hover { border-color: var(--line-2); box-shadow: 0 8px 24px rgba(255,255,255,0.04); }
+.btn.gold {
+  background: transparent;
+  color: var(--gold);
+  border: 1px solid var(--gold-warm);
+}
+.btn.gold:hover { background: var(--gold); color: var(--bg); box-shadow: 0 10px 28px rgba(244,196,48,0.25); }
 
-/* ---------- PREDICTION OUTPUT ---------- */
-#output { min-height: 380px; }
-
+#output { min-height: 420px; }
 .placeholder {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  height: 380px;
+  height: 420px;
   color: var(--muted);
   text-align: center;
-  border: 2px dashed var(--line);
-  border-radius: 4px;
+  border: 1.5px dashed var(--line);
+  border-radius: 6px;
+  padding: 28px;
 }
-.placeholder svg { opacity: 0.3; margin-bottom: 14px; }
+.placeholder svg { opacity: 0.25; margin-bottom: 16px; }
 .placeholder .big {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 28px;
-  letter-spacing: 0.05em;
+  font-size: 32px;
+  letter-spacing: 0.04em;
   color: var(--muted);
+  font-weight: 400;
+}
+.placeholder .small {
+  font-size: 13px;
+  margin-top: 8px;
+  max-width: 320px;
+  line-height: 1.5;
 }
 
 .fight-card {
   background: var(--bg-2);
   border: 1px solid var(--line);
-  border-radius: 4px;
-  padding: 26px;
+  border-radius: 6px;
+  padding: 28px;
   position: relative;
   overflow: hidden;
+  animation: fadeUp 0.5s cubic-bezier(.2,.8,.2,1);
 }
 .fight-card::before {
   content: "";
@@ -314,39 +431,42 @@ header {
   height: 3px;
   background: var(--grad);
 }
-
 .matchup {
   display: grid;
   grid-template-columns: 1fr auto 1fr;
   align-items: center;
   gap: 24px;
-  margin-bottom: 24px;
+  margin-bottom: 26px;
 }
-.fighter-block {
-  text-align: center;
-}
+@media (max-width: 700px) { .matchup { gap: 12px; } }
+.fighter-block { text-align: center; cursor: pointer; transition: transform 0.18s; padding: 8px; border-radius: 4px; }
+.fighter-block:hover { transform: translateY(-3px); background: rgba(255,255,255,0.02); }
 .fighter-block .name {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 28px;
-  letter-spacing: 0.04em;
-  line-height: 1.1;
+  letter-spacing: 0.03em;
+  line-height: 1.05;
   margin-bottom: 6px;
+  word-break: break-word;
+  font-weight: 400;
 }
 .fighter-block .elo {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   color: var(--muted);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.12em;
+  font-weight: 500;
 }
 .fighter-block .prob {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 56px;
   line-height: 1;
-  margin-top: 12px;
+  margin-top: 14px;
   background: var(--grad);
   -webkit-background-clip: text;
   background-clip: text;
   color: transparent;
+  font-weight: 400;
 }
 .fighter-block.loser .prob {
   background: none;
@@ -355,46 +475,48 @@ header {
 }
 .vs-spacer {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: 36px;
+  font-size: 32px;
   color: var(--red);
-  letter-spacing: 0.1em;
+  letter-spacing: 0.08em;
+  font-weight: 400;
 }
 
-/* prob bar */
 .prob-bar {
-  height: 8px;
+  height: 9px;
   background: var(--bg-3);
   border-radius: 999px;
   overflow: hidden;
-  margin-bottom: 22px;
+  margin-bottom: 24px;
   position: relative;
 }
 .prob-bar .fill {
   height: 100%;
   background: var(--grad);
   border-radius: 999px;
-  transition: width 0.6s cubic-bezier(.2,.8,.2,1);
+  transition: width 0.7s cubic-bezier(.2,.8,.2,1);
 }
 
-/* stat row */
 .stat-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 12px;
-  margin-bottom: 22px;
+  gap: 10px;
+  margin-bottom: 24px;
 }
-@media (max-width: 600px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
 .stat {
   background: var(--bg-3);
   border: 1px solid var(--line);
-  border-radius: 2px;
-  padding: 12px;
+  border-radius: 4px;
+  padding: 14px 10px;
   text-align: center;
+  transition: border-color 0.15s;
 }
+.stat:hover { border-color: var(--line-2); }
 .stat .v {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 26px;
   line-height: 1;
+  font-weight: 400;
 }
 .stat .v.good { color: var(--green); }
 .stat .v.bad { color: var(--red-glow); }
@@ -405,201 +527,161 @@ header {
   color: var(--muted);
   letter-spacing: 0.15em;
   text-transform: uppercase;
-  margin-top: 4px;
+  margin-top: 5px;
+  font-weight: 500;
 }
 
-/* recommendation banner */
 .rec {
   padding: 16px 18px;
-  border-radius: 2px;
-  margin-bottom: 22px;
+  border-radius: 4px;
+  margin-bottom: 24px;
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
   border-left: 3px solid;
+  line-height: 1.55;
+  font-weight: 500;
 }
-.rec.bet {
-  background: rgba(46,204,113,0.08);
-  border-color: var(--green);
-  color: #a8f0c2;
-}
-.rec.pass {
-  background: rgba(138,138,146,0.08);
-  border-color: var(--muted);
-  color: var(--muted);
-}
+.rec.value { background: rgba(46,204,113,0.07); border-color: var(--green); color: #b3f1cb; }
+.rec.fair { background: rgba(244,196,48,0.07); border-color: var(--gold); color: #f8dc8a; }
+.rec.bad { background: rgba(138,138,146,0.07); border-color: var(--muted); color: var(--muted); }
 
-/* SHAP */
-.shap-panel { margin-top: 6px; }
-.shap-panel .head {
-  display: flex; justify-content: space-between; align-items: baseline;
-  margin-bottom: 12px;
-}
-.shap-panel .head h3 {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 18px;
-  letter-spacing: 0.06em;
-}
-.shap-panel .head .ht {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 10px;
-  color: var(--muted);
-  letter-spacing: 0.15em;
-}
-.shap-row {
-  display: grid;
-  grid-template-columns: 150px 1fr 60px;
-  align-items: center;
-  gap: 12px;
-  margin-bottom: 8px;
-  font-size: 12px;
-}
-.shap-row .feat {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--ink);
-}
-.shap-row .barwrap {
-  position: relative;
-  height: 14px;
-  background: var(--bg-3);
-  border-radius: 1px;
-  overflow: hidden;
-}
-.shap-row .barwrap .center {
-  position: absolute;
-  left: 50%; top: 0; bottom: 0;
-  width: 1px;
-  background: var(--line);
-}
-.shap-row .bar {
-  position: absolute;
-  top: 0; bottom: 0;
-  height: 100%;
-}
+.shap-panel { margin-top: 8px; }
+.shap-panel .head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 14px; flex-wrap: wrap; gap: 8px; }
+.shap-panel .head h3 { font-family: 'Bebas Neue', sans-serif; font-size: 19px; letter-spacing: 0.05em; font-weight: 400; }
+.shap-panel .head .ht { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.1em; font-weight: 500; }
+.shap-row { display: grid; grid-template-columns: 160px 1fr 64px; align-items: center; gap: 12px; margin-bottom: 9px; font-size: 12px; }
+@media (max-width: 700px) { .shap-row { grid-template-columns: 110px 1fr 50px; gap: 8px; font-size: 11px; } }
+.shap-row .feat { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--ink-2); font-weight: 500; }
+.shap-row .barwrap { position: relative; height: 16px; background: var(--bg-3); border-radius: 2px; overflow: hidden; }
+.shap-row .barwrap .center { position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--line); }
+.shap-row .bar { position: absolute; top: 0; bottom: 0; height: 100%; transition: width 0.5s cubic-bezier(.2,.8,.2,1); }
 .shap-row .bar.pos { background: var(--green); left: 50%; }
 .shap-row .bar.neg { background: var(--red-glow); right: 50%; }
-.shap-row .val {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--muted);
-  text-align: right;
-}
+.shap-row .val { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); text-align: right; font-weight: 500; }
 
-/* ---------- FIGHTER PICKER ---------- */
-.fighter-picker {
-  position: relative;
-}
+.fighter-picker { position: relative; }
 .fighter-list {
   position: absolute;
-  top: 100%;
-  left: 0; right: 0;
+  top: 100%; left: 0; right: 0;
   background: var(--bg-3);
-  border: 1px solid var(--line);
-  max-height: 220px;
+  border: 1px solid var(--line-2);
+  max-height: 260px;
   overflow-y: auto;
   z-index: 10;
   display: none;
+  border-radius: 0 0 4px 4px;
+  box-shadow: 0 8px 20px rgba(0,0,0,0.4);
 }
 .fighter-list.open { display: block; }
 .fighter-list .item {
-  padding: 8px 12px;
+  padding: 9px 13px;
   cursor: pointer;
   font-size: 13px;
-  display: flex;
-  justify-content: space-between;
+  display: flex; justify-content: space-between; align-items: center; gap: 10px;
   border-bottom: 1px solid var(--bg-2);
+  transition: background 0.12s;
+  font-weight: 500;
 }
-.fighter-list .item:hover { background: var(--bg); }
-.fighter-list .item .elo-tag {
+.fighter-list .item:hover { background: var(--bg-4); }
+.fighter-list .item .meta {
+  display: flex; gap: 10px; align-items: center;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--gold);
-}
-
-/* ---------- CARD MODE ---------- */
-.tabs {
-  display: flex;
-  border-bottom: 1px solid var(--line);
-  margin-bottom: 20px;
-}
-.tab {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 16px;
-  letter-spacing: 0.1em;
-  padding: 12px 18px;
-  cursor: pointer;
+  font-size: 10px;
   color: var(--muted);
-  position: relative;
+  font-weight: 500;
 }
-.tab.active { color: var(--ink); }
-.tab.active::after {
-  content: "";
-  position: absolute;
-  left: 0; right: 0; bottom: -1px;
-  height: 2px;
-  background: var(--red);
-}
+.fighter-list .item .meta .elo-tag { color: var(--gold); }
 
 .card-row {
   display: grid;
-  grid-template-columns: 30px 1fr auto auto auto;
+  grid-template-columns: 32px 1fr auto auto auto;
   align-items: center;
-  gap: 16px;
+  gap: 14px;
   padding: 14px;
   border: 1px solid var(--line);
   background: var(--bg-2);
-  border-radius: 2px;
+  border-radius: 4px;
   margin-bottom: 8px;
+  transition: border-color 0.15s;
 }
-.card-row .rank {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 22px;
-  color: var(--gold);
-}
-.card-row .matchup-mini {
-  font-family: 'Archivo', sans-serif;
-  font-size: 13px;
-}
+.card-row:hover { border-color: var(--line-2); }
+@media (max-width: 700px) { .card-row { grid-template-columns: 24px 1fr auto; padding: 11px; gap: 10px; } .card-row .ev-tag, .card-row .stake { display: none; } }
+.card-row .rank { font-family: 'Bebas Neue', sans-serif; font-size: 23px; color: var(--gold); font-weight: 400; }
+.card-row .matchup-mini { font-size: 13.5px; font-weight: 500; }
 .card-row .matchup-mini strong { color: var(--green); font-weight: 700; }
-.card-row .ev-tag {
+.card-row .ev-tag { font-family: 'JetBrains Mono', monospace; font-size: 11px; padding: 5px 11px; border-radius: 3px; letter-spacing: 0.04em; white-space: nowrap; font-weight: 600; }
+.card-row .ev-tag.good { background: rgba(46,204,113,0.14); color: var(--green); }
+.card-row .ev-tag.bad { background: rgba(138,138,146,0.14); color: var(--muted); }
+.card-row .stake { font-family: 'Bebas Neue', sans-serif; font-size: 19px; color: var(--gold); letter-spacing: 0.04em; font-weight: 400; }
+.card-row .x-btn { cursor: pointer; color: var(--muted-2); font-weight: bold; transition: color 0.15s; font-size: 18px; }
+.card-row .x-btn:hover { color: var(--red); }
+
+.backtest-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; margin-bottom: 24px; }
+.bt-card { background: var(--bg-3); border: 1px solid var(--line); padding: 18px; border-radius: 4px; transition: border-color 0.15s; }
+.bt-card:hover { border-color: var(--line-2); }
+.bt-card .v { font-family: 'Bebas Neue', sans-serif; font-size: 38px; line-height: 1; font-weight: 400; }
+.bt-card .l { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; margin-top: 7px; font-weight: 500; }
+.bt-chart { background: var(--bg-3); border: 1px solid var(--line); padding: 18px; border-radius: 4px; }
+
+table.year-table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 13px; }
+.year-table th { text-align: left; font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--muted); letter-spacing: 0.15em; text-transform: uppercase; padding: 10px 8px; border-bottom: 1px solid var(--line); font-weight: 500; }
+.year-table td { padding: 11px 8px; border-bottom: 1px solid var(--line); font-weight: 500; }
+.year-table .pos { color: var(--green); }
+.year-table .neg { color: var(--red-glow); }
+
+.honesty-callout {
+  background: rgba(244,196,48,0.06);
+  border-left: 3px solid var(--gold);
+  padding: 16px 20px;
+  font-size: 13.5px;
+  color: var(--ink-2);
+  border-radius: 3px;
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+.honesty-callout strong {
+  color: var(--gold);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
-  padding: 4px 10px;
-  border-radius: 2px;
-  letter-spacing: 0.05em;
-}
-.card-row .ev-tag.good { background: rgba(46,204,113,0.15); color: var(--green); }
-.card-row .ev-tag.bad { background: rgba(138,138,146,0.15); color: var(--muted); }
-.card-row .stake {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 18px;
-  color: var(--gold);
-  letter-spacing: 0.05em;
+  letter-spacing: 0.15em;
+  display: block;
+  margin-bottom: 6px;
+  font-weight: 600;
 }
 
-/* ---------- TOAST ---------- */
-.toast {
-  position: fixed;
-  bottom: 24px; right: 24px;
-  background: var(--bg-2);
-  border: 1px solid var(--line);
-  padding: 14px 20px;
-  border-radius: 2px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  z-index: 100;
-  animation: slideIn 0.3s ease-out;
-  border-left: 3px solid var(--red);
-}
-@keyframes slideIn {
-  from { transform: translateY(20px); opacity: 0; }
-  to { transform: translateY(0); opacity: 1; }
-}
+.hiw-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 14px; }
+.hiw { background: var(--bg-3); border: 1px solid var(--line); padding: 20px; border-radius: 4px; transition: border-color 0.15s, transform 0.15s; }
+.hiw:hover { border-color: var(--line-2); transform: translateY(-2px); }
+.hiw .step { font-family: 'JetBrains Mono', monospace; font-size: 10px; color: var(--red); letter-spacing: 0.15em; font-weight: 600; }
+.hiw h3 { font-family: 'Bebas Neue', sans-serif; font-size: 23px; letter-spacing: 0.04em; margin: 8px 0 6px; font-weight: 400; }
+.hiw p { color: var(--ink-2); font-size: 13px; line-height: 1.65; }
+
+.toast { position: fixed; bottom: 28px; right: 28px; background: var(--bg-2); border: 1px solid var(--line-2); padding: 13px 20px; border-radius: 4px; font-family: 'JetBrains Mono', monospace; font-size: 12px; z-index: 100; animation: slideIn 0.3s ease-out; border-left: 3px solid var(--red); max-width: 340px; box-shadow: 0 12px 32px rgba(0,0,0,0.4); font-weight: 500; }
+@keyframes slideIn { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+
+.modal-bg { position: fixed; inset: 0; background: rgba(0,0,0,0.75); z-index: 200; display: none; align-items: center; justify-content: center; padding: 20px; backdrop-filter: blur(4px); }
+.modal-bg.open { display: flex; }
+.modal { background: var(--bg-2); border: 1px solid var(--line); border-radius: 8px; max-width: 620px; width: 100%; max-height: 90vh; overflow-y: auto; padding: 32px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); animation: fadeUp 0.3s; }
+.modal .close-x { position: absolute; top: 16px; right: 18px; font-size: 26px; cursor: pointer; color: var(--muted); transition: color 0.15s; line-height: 1; }
+.modal .close-x:hover { color: var(--ink); }
+.modal h2 { font-family: 'Bebas Neue', sans-serif; font-size: 36px; letter-spacing: 0.03em; margin-bottom: 8px; font-weight: 400; }
+.modal .modal-elo { font-family: 'JetBrains Mono', monospace; font-size: 12px; color: var(--gold); letter-spacing: 0.15em; margin-bottom: 22px; font-weight: 500; }
+.modal-section { margin-bottom: 22px; }
+.modal-section h4 { font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.15em; margin-bottom: 12px; text-transform: uppercase; font-weight: 600; }
+.modal-stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; }
+.modal-stat { background: var(--bg-3); border: 1px solid var(--line); padding: 12px; border-radius: 4px; text-align: center; }
+.modal-stat .v { font-family: 'Bebas Neue', sans-serif; font-size: 24px; line-height: 1; font-weight: 400; }
+.modal-stat .l { font-family: 'JetBrains Mono', monospace; font-size: 9px; color: var(--muted); letter-spacing: 0.15em; margin-top: 5px; text-transform: uppercase; font-weight: 500; }
+
+.l5 { display: flex; gap: 5px; justify-content: center; margin-top: 8px; }
+.l5 .pip { width: 16px; height: 16px; border-radius: 50%; }
+.l5 .pip.w { background: var(--green); box-shadow: 0 0 8px rgba(46,204,113,0.4); }
+.l5 .pip.l { background: var(--red-glow); }
 
 footer {
-  margin-top: 60px;
-  padding-top: 24px;
+  margin-top: 70px;
+  padding-top: 28px;
   border-top: 1px solid var(--line);
   font-family: 'JetBrains Mono', monospace;
   font-size: 10px;
@@ -608,16 +690,21 @@ footer {
   text-transform: uppercase;
   display: flex;
   justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  font-weight: 500;
 }
+footer a { color: var(--muted); text-decoration: none; transition: color 0.15s; }
+footer a:hover { color: var(--gold); }
 </style>
 </head>
 <body>
 <div class="wrap">
 
-<header>
+<header class="fadeUp">
   <div class="brand">
     <div class="mark">Sahl</div>
-    <div class="sub">// UFC Predictor v1.0</div>
+    <div class="sub">// UFC Fight Analytics</div>
   </div>
   <div class="status">
     <span><span class="dot"></span>Model Online</span>
@@ -626,30 +713,31 @@ footer {
   </div>
 </header>
 
-<div class="hero">
-  <div>
-    <h1>Predict.<br><span class="accent">Calibrate.</span><br>Profit.</h1>
-    <p class="sub">Calibrated XGBoost on 24 engineered features including Elo ratings, striking and grappling composites. Outputs win probability, expected value, and Half-Kelly stake recommendations against the book.</p>
-  </div>
-  <div class="metrics-strip">
-    <div class="metric"><div class="num" id="m-fights">--</div><div class="lbl">Fights Trained</div></div>
-    <div class="metric"><div class="num" id="m-fighters">--</div><div class="lbl">Fighters</div></div>
-    <div class="metric"><div class="num" id="m-features">24</div><div class="lbl">Features</div></div>
-  </div>
+<div class="hero fadeUp delay-1">
+  <h1>Read the fight.<br><span class="accent">Beat the read.</span></h1>
+  <p class="lead">A calibrated XGBoost model trained on thousands of UFC fights gives you <strong>honest win probabilities</strong>, market edge, and EV math. Sahl shows you what the numbers say. <strong>You make the call.</strong></p>
+  <p class="micro">Calibrated probabilities · Real SHAP explanations · Honest backtests · No hype</p>
 </div>
 
-<div class="tabs">
+<div class="metrics-band fadeUp delay-2" id="metrics-band">
+  <div class="metric"><div class="num gold" id="m-fighters">--</div><div class="lbl">Fighters Tracked <span class="info-icon">i<span class="tooltip">Real UFC fighters in the model's database, with full career stats and Elo rating.</span></span></div></div>
+  <div class="metric"><div class="num gold" id="m-fights">--</div><div class="lbl">Fights Analyzed</div></div>
+  <div class="metric"><div class="num gold" id="m-acc">--</div><div class="lbl">Model Accuracy <span class="info-icon">i<span class="tooltip">How often the model's pick wins on out-of-sample test fights. UFC has high variance — top published models hit 65-72%.</span></span></div></div>
+  <div class="metric"><div class="num gold" id="m-features">24</div><div class="lbl">Features Engineered</div></div>
+  <div class="metric"><div class="num gold" id="m-auc">--</div><div class="lbl">AUC Score <span class="info-icon">i<span class="tooltip">Model discrimination quality. 0.5 = random, 1.0 = perfect. 0.65+ is real predictive signal.</span></span></div></div>
+</div>
+
+<div class="tabs fadeUp delay-3">
   <div class="tab active" data-tab="single">Single Fight</div>
   <div class="tab" data-tab="card">Full Card</div>
+  <div class="tab" data-tab="backtest">Track Record</div>
+  <div class="tab" data-tab="how">How It Works</div>
 </div>
 
-<!-- SINGLE FIGHT TAB -->
-<div id="tab-single" class="tab-content">
+<div id="tab-single" class="tab-content fadeUp delay-4">
 <div class="grid">
-  <!-- INPUT PANEL -->
   <div class="panel">
     <h2><span class="num">01</span> Matchup</h2>
-
     <div class="row-2">
       <div class="form-row fighter-picker">
         <label>Fighter A (Red Corner)</label>
@@ -662,7 +750,6 @@ footer {
         <div class="fighter-list" id="fb-list"></div>
       </div>
     </div>
-
     <div class="form-row">
       <label>Weight Class</label>
       <select id="wc">
@@ -673,54 +760,42 @@ footer {
         <option>Heavyweight</option>
       </select>
     </div>
-
     <div class="row-2">
       <div class="form-row">
         <label>Title Bout?</label>
         <select id="title"><option value="0">No</option><option value="1">Yes</option></select>
       </div>
       <div class="form-row">
-        <label>Bankroll ($)</label>
+        <label>Bankroll ($) <span class="info-icon">i<span class="tooltip">Optional. Used for Kelly stake sizing if you enter odds. Capped at 5% of this per bet.</span></span></label>
         <input id="bankroll" type="number" value="1000">
       </div>
     </div>
-
-    <h2 style="margin-top:24px"><span class="num">02</span> Market Odds</h2>
+    <h2 style="margin-top:26px"><span class="num">02</span> Odds (Optional)</h2>
+    <p style="font-size: 12.5px; color: var(--muted); margin-bottom: 14px; line-height: 1.5;">Enter American odds from your sportsbook to compare against Sahl's probability and calculate EV. Skip this for just the model's read.</p>
     <div class="row-2">
-      <div class="form-row">
-        <label>Odds A (American)</label>
-        <input id="oa" type="number" placeholder="-150">
-      </div>
-      <div class="form-row">
-        <label>Odds B (American)</label>
-        <input id="ob" type="number" placeholder="+130">
-      </div>
+      <div class="form-row"><label>Odds A</label><input id="oa" type="number" placeholder="-150"></div>
+      <div class="form-row"><label>Odds B</label><input id="ob" type="number" placeholder="+130"></div>
     </div>
-
-    <button class="btn" id="run">RUN PREDICTION</button>
+    <button class="btn" id="run">ANALYZE FIGHT</button>
   </div>
 
-  <!-- OUTPUT PANEL -->
   <div id="output">
     <div class="placeholder">
-      <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+      <svg width="84" height="84" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.4">
         <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z"/>
         <path d="M12 22V12M12 12L4 7M12 12l8-5"/>
       </svg>
       <div class="big">Awaiting Matchup</div>
-      <div style="font-size:13px;margin-top:6px">Pick two fighters, enter market odds.</div>
+      <div class="small">Pick two fighters, optionally enter sportsbook odds, hit analyze.</div>
     </div>
   </div>
 </div>
 </div>
 
-<!-- CARD TAB -->
 <div id="tab-card" class="tab-content" style="display:none">
-<div class="panel" style="margin-bottom:20px">
+<div class="panel" style="margin-bottom:22px">
   <h2><span class="num">03</span> Full Card Builder</h2>
-  <p style="color:var(--muted);font-size:13px;margin-bottom:16px">
-    Add fights one by one. Hit Run Card to rank picks by Expected Value.
-  </p>
+  <p style="color:var(--muted);font-size:13.5px;margin-bottom:18px;line-height:1.55">Build a full UFC card. Add fights with sportsbook odds. Sahl ranks them by EV, surfacing the biggest disagreements with the market.</p>
   <div class="row-2">
     <div class="form-row fighter-picker">
       <label>Fighter A</label>
@@ -738,41 +813,117 @@ footer {
     <div class="form-row"><label>Odds B</label><input id="cob" type="number" placeholder="+130"></div>
   </div>
   <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-    <button class="btn" id="add-fight" style="background:var(--bg-3);color:var(--ink);border:1px solid var(--line)">ADD TO CARD</button>
-    <button class="btn" id="load-upcoming" style="background:var(--bg-3);color:var(--gold);border:1px solid var(--gold)">LOAD NEXT UFC CARD</button>
+    <button class="btn secondary" id="add-fight">ADD TO CARD</button>
+    <button class="btn gold" id="load-upcoming">LOAD NEXT UFC CARD</button>
   </div>
-  <div id="card-list" style="margin-top:16px"></div>
-  <button class="btn" id="run-card" style="margin-top:14px">RUN FULL CARD</button>
+  <div id="card-list" style="margin-top:18px"></div>
+  <button class="btn" id="run-card" style="margin-top:14px">ANALYZE CARD</button>
 </div>
 <div id="card-output"></div>
 </div>
 
+<div id="tab-backtest" class="tab-content" style="display:none">
+<div class="panel">
+  <h2><span class="num">04</span> Track Record</h2>
+  <p style="color:var(--muted); font-size: 13.5px; margin-bottom: 22px; line-height: 1.55;">Sahl's performance simulated over historical UFC fights with real Vegas odds. <strong style="color:var(--ink-2)">Out-of-sample only</strong> — the model never saw these fights during training.</p>
+
+  <div class="honesty-callout">
+    <strong>HONEST FRAMING</strong>
+    These numbers reflect what would have happened betting Sahl's positive-EV picks with Half-Kelly stakes against historical sportsbook lines. UFC betting markets are sharp — even a well-calibrated model often runs slightly negative ROI net of the vig. Use Sahl as an analytical edge for your own decisions, not as a guaranteed profit machine.
+  </div>
+
+  <div id="backtest-content">
+    <div class="placeholder"><div class="big">Loading...</div></div>
+  </div>
+</div>
+</div>
+
+<div id="tab-how" class="tab-content" style="display:none">
+<div class="panel">
+  <h2><span class="num">?</span> How Sahl Works</h2>
+  <p style="color: var(--ink-2); font-size: 14px; margin-bottom: 22px; line-height: 1.6;">Six steps from raw fight data to honest probabilities you can reason about.</p>
+  <div class="hiw-grid">
+    <div class="hiw">
+      <div class="step">STEP 01</div>
+      <h3>Learn from history</h3>
+      <p>XGBoost — gradient-boosted decision trees — trains on thousands of past UFC fights. It learns patterns from 24 features per matchup including Elo skill rating, striking volume, takedown defense, age, and reach.</p>
+    </div>
+    <div class="hiw">
+      <div class="step">STEP 02</div>
+      <h3>Calibrate the probabilities</h3>
+      <p>Raw model outputs aren't true probabilities. Isotonic regression on a held-out validation set maps them so 70% really means 70%. Calibration matters more than accuracy for honest analysis.</p>
+    </div>
+    <div class="hiw">
+      <div class="step">STEP 03</div>
+      <h3>Find market disagreements</h3>
+      <p>Sahl strips the vig out of your sportsbook's odds to find their implied probability, then compares to its own. When they meaningfully disagree, that's a spot worth a closer look.</p>
+    </div>
+    <div class="hiw">
+      <div class="step">STEP 04</div>
+      <h3>Quantify the edge</h3>
+      <p>Half-Kelly stake math with a 5% bankroll cap shows you what a disciplined bettor would risk. EV greater than 2% triggers a "value" tag. Below that, the edge is too thin to chase.</p>
+    </div>
+    <div class="hiw">
+      <div class="step">STEP 05</div>
+      <h3>Explain every pick</h3>
+      <p>Real SHAP values show the top 5 reasons the model picked who it picked. Elo difference too big? Takedown rate mismatch? You see exactly what drove the prediction — no black box.</p>
+    </div>
+    <div class="hiw">
+      <div class="step">STEP 06</div>
+      <h3>Self-learn weekly</h3>
+      <p>Every Monday, Sahl scrapes the previous week's UFC results, updates Elo ratings, and retrains itself. Next week's reads are sharper than this week's.</p>
+    </div>
+  </div>
+  <div class="honesty-callout" style="margin-top: 24px;">
+    <strong>REALITY CHECK</strong>
+    State-of-the-art UFC prediction tops out at ~70% accuracy. MMA is genuinely high-variance — injuries, weight cuts, judging chaos. Sahl's value isn't picking every winner. It's giving you calibrated probabilities and a transparent breakdown of why. The decision to bet, pass, or watch is yours.
+  </div>
+</div>
+</div>
+
 <footer>
-  <span>SAHL UFC PREDICTOR // CALIBRATED XGBOOST</span>
-  <span id="server-info">Half-Kelly • 5% Bankroll Cap</span>
+  <span>SAHL // UFC FIGHT ANALYTICS</span>
+  <span>Calibrated XGBoost · 24 Features · SHAP Explanations</span>
 </footer>
 
 </div>
 
+<div class="modal-bg" id="modal-bg">
+  <div class="modal" id="modal">
+    <div class="close-x" onclick="closeModal()">×</div>
+    <div id="modal-content"></div>
+  </div>
+</div>
+
 <script>
-// Use same origin as the page (works locally + when deployed)
 const API = "";
 let FIGHTERS = [];
 let cardFights = [];
 
-// --- Init ---
 async function init() {
   try {
-    const [fighters, metrics] = await Promise.all([
+    const [fighters, metrics, backtest] = await Promise.all([
       fetch(API + "/api/fighters?limit=5000").then(r => r.json()),
       fetch(API + "/api/metrics").then(r => r.json()).catch(() => ({})),
+      fetch(API + "/api/backtest").then(r => r.json()).catch(() => ({available: false})),
     ]);
     FIGHTERS = fighters;
     document.getElementById("m-fighters").textContent = fighters.length.toLocaleString();
     if (metrics.calibrated) {
-      document.getElementById("model-acc").innerHTML = "Acc <strong style='color:var(--ink)'>" + (metrics.calibrated.acc * 100).toFixed(1) + "%</strong>";
-      document.getElementById("model-auc").innerHTML = "AUC <strong style='color:var(--ink)'>" + metrics.calibrated.auc.toFixed(3) + "</strong>";
-      document.getElementById("m-fights").textContent = (metrics.test_n * 7).toLocaleString();  // approx full-set size
+      const acc = (metrics.calibrated.acc * 100).toFixed(1) + "%";
+      const auc = metrics.calibrated.auc.toFixed(3);
+      document.getElementById("model-acc").innerHTML = "Acc <strong style='color:var(--ink)'>" + acc + "</strong>";
+      document.getElementById("model-auc").innerHTML = "AUC <strong style='color:var(--ink)'>" + auc + "</strong>";
+      document.getElementById("m-acc").textContent = acc;
+      document.getElementById("m-auc").textContent = auc;
+    }
+    if (metrics.test_n) {
+      document.getElementById("m-fights").textContent = (metrics.test_n * 7).toLocaleString();
+    }
+    if (backtest.available) {
+      renderBacktest(backtest);
+    } else {
+      document.getElementById("backtest-content").innerHTML = `<div class="placeholder"><div class="big">No backtest yet</div><div class="small">Run <code style="color:var(--gold)">python backend/backtest.py</code> on your machine.</div></div>`;
     }
   } catch(e) {
     showToast("Backend offline — start server.py first");
@@ -780,7 +931,6 @@ async function init() {
 }
 init();
 
-// --- Tabs ---
 document.querySelectorAll(".tab").forEach(t => {
   t.addEventListener("click", () => {
     document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
@@ -790,20 +940,22 @@ document.querySelectorAll(".tab").forEach(t => {
   });
 });
 
-// --- Fighter picker ---
 function attachPicker(inputId, listId) {
   const inp = document.getElementById(inputId);
   const lst = document.getElementById(listId);
   inp.addEventListener("input", () => {
     const q = inp.value.toLowerCase();
     if (q.length < 1) { lst.classList.remove("open"); return; }
-    const matches = FIGHTERS.filter(f => f.name.toLowerCase().includes(q)).slice(0, 12);
+    const matches = FIGHTERS.filter(f => f.name.toLowerCase().includes(q))
+                           .sort((a, b) => b.fights - a.fights || b.elo - a.elo)
+                           .slice(0, 12);
     lst.innerHTML = matches.map(f =>
-      `<div class="item" data-name="${f.name}"><span>${f.name}</span><span class="elo-tag">Elo ${f.elo}</span></div>`
+      `<div class="item" data-name="${f.name}"><span>${f.name}</span><div class="meta"><span>${f.wins}-${f.losses}</span><span class="elo-tag">Elo ${f.elo}</span></div></div>`
     ).join("");
     lst.classList.add("open");
     lst.querySelectorAll(".item").forEach(item => {
-      item.addEventListener("click", () => {
+      item.addEventListener("mousedown", e => {
+        e.preventDefault();
         inp.value = item.dataset.name;
         lst.classList.remove("open");
       });
@@ -813,14 +965,12 @@ function attachPicker(inputId, listId) {
 }
 ["fa", "fb", "cfa", "cfb"].forEach(id => attachPicker(id, id + "-list"));
 
-// --- Single prediction ---
 document.getElementById("run").addEventListener("click", async () => {
   const fa = document.getElementById("fa").value.trim();
   const fb = document.getElementById("fb").value.trim();
   if (!fa || !fb) return showToast("Pick both fighters");
   const payload = {
-    fighter_a: fa,
-    fighter_b: fb,
+    fighter_a: fa, fighter_b: fb,
     weight_class: document.getElementById("wc").value,
     title_bout: parseInt(document.getElementById("title").value),
     bankroll: parseFloat(document.getElementById("bankroll").value || "1000"),
@@ -830,139 +980,103 @@ document.getElementById("run").addEventListener("click", async () => {
   if (oa) payload.odds_a = parseInt(oa);
   if (ob) payload.odds_b = parseInt(ob);
 
-  document.getElementById("output").innerHTML = `<div class="placeholder"><div class="big">CALCULATING...</div></div>`;
+  document.getElementById("output").innerHTML = `<div class="placeholder"><div class="big">ANALYZING...</div></div>`;
   try {
-    const res = await fetch(API + "/api/predict", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify(payload),
-    });
-    if (!res.ok) throw new Error(res.status);
+    const res = await fetch(API + "/api/predict", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(payload) });
+    if (!res.ok) throw new Error(await res.text() || res.status);
     const data = await res.json();
     renderPrediction(data);
   } catch(e) {
-    document.getElementById("output").innerHTML = `<div class="placeholder"><div class="big" style="color:var(--red)">ERROR</div><div>${e.message}</div></div>`;
+    document.getElementById("output").innerHTML = `<div class="placeholder"><div class="big" style="color:var(--red)">ERROR</div><div class="small">${(e.message||e).slice(0,150)}</div></div>`;
   }
 });
 
 function renderPrediction(d) {
   const aWin = d.p_a > d.p_b;
-  const A = aWin ? d : null;
-  const fightStats = "";
-
   let recHtml = "";
   if (d.recommendation) {
-    const isBet = d.recommendation.startsWith("BET");
-    recHtml = `<div class="rec ${isBet ? 'bet' : 'pass'}">${d.recommendation}</div>`;
+    let cls = "bad", txt = d.recommendation;
+    if (d.recommendation.startsWith("BET")) {
+      cls = "value";
+      const parts = txt.match(/BET (.+?) - stake \$([\d.]+) \(EV (.+?), edge (.+?)\)/);
+      if (parts) {
+        txt = `MODEL FAVORS ${parts[1]} · EDGE ${parts[4]} · EV ${parts[3]}\nStake suggestion: $${parts[2]} (Half-Kelly, capped at 5% bankroll)`;
+      }
+    } else if (d.recommendation.startsWith("PASS")) {
+      cls = "fair";
+      txt = "NO MEANINGFUL EDGE\nThe model and the market roughly agree. No clear value either way.";
+    }
+    recHtml = `<div class="rec ${cls}" style="white-space: pre-line;">${txt}</div>`;
   }
-
-  // SHAP-style bars
   let shapHtml = "";
   if (d.explanations && d.explanations.length) {
     const maxAbs = Math.max(...d.explanations.map(e => Math.abs(e.shap)));
     shapHtml = d.explanations.map(e => {
-      const pct = Math.abs(e.shap) / maxAbs * 50;  // % of half-bar
+      const pct = Math.abs(e.shap) / maxAbs * 50;
       const isPos = e.shap > 0;
-      return `
-        <div class="shap-row">
-          <div class="feat">${e.feature}</div>
-          <div class="barwrap">
-            <div class="center"></div>
-            <div class="bar ${isPos ? 'pos' : 'neg'}" style="width:${pct}%"></div>
-          </div>
-          <div class="val">${e.shap >= 0 ? '+' : ''}${e.shap.toFixed(2)}</div>
-        </div>`;
+      return `<div class="shap-row"><div class="feat">${e.feature}</div><div class="barwrap"><div class="center"></div><div class="bar ${isPos ? 'pos' : 'neg'}" style="width:${pct}%"></div></div><div class="val">${e.shap >= 0 ? '+' : ''}${e.shap.toFixed(2)}</div></div>`;
     }).join("");
   }
-
-  // Stat tiles
   let stats = "";
   if (d.market_p_a !== null && d.market_p_a !== undefined) {
     const edge = aWin ? d.edge_a : d.edge_b;
     const ev = aWin ? d.ev_a : d.ev_b;
     const stake = aWin ? d.kelly_stake_a : d.kelly_stake_b;
-    stats = `
-      <div class="stat-grid">
-        <div class="stat"><div class="v gold">${(d.confidence*100).toFixed(1)}%</div><div class="l">Win Probability</div></div>
-        <div class="stat"><div class="v ${edge > 0 ? 'good' : 'bad'}">${(edge*100).toFixed(1)}</div><div class="l">Edge (pts)</div></div>
-        <div class="stat"><div class="v ${ev > 0 ? 'good' : 'bad'}">${ev > 0 ? '+' : ''}${(ev*100).toFixed(1)}%</div><div class="l">Expected Value</div></div>
-        <div class="stat"><div class="v gold">$${stake?.toFixed(0) || '0'}</div><div class="l">Kelly Stake</div></div>
-      </div>
-    `;
+    stats = `<div class="stat-grid">
+      <div class="stat"><div class="v gold">${(d.confidence*100).toFixed(1)}%</div><div class="l">Model Probability</div></div>
+      <div class="stat"><div class="v ${edge > 0 ? 'good' : 'bad'}">${(edge*100).toFixed(1)}</div><div class="l">Edge (pts)</div></div>
+      <div class="stat"><div class="v ${ev > 0 ? 'good' : 'bad'}">${ev > 0 ? '+' : ''}${(ev*100).toFixed(1)}%</div><div class="l">Expected Value</div></div>
+      <div class="stat"><div class="v gold">$${stake?.toFixed(0) || '0'}</div><div class="l">Kelly Stake</div></div></div>`;
   } else {
-    stats = `
-      <div class="stat-grid">
-        <div class="stat"><div class="v gold">${(d.confidence*100).toFixed(1)}%</div><div class="l">Win Probability</div></div>
-        <div class="stat"><div class="v">${d.elo_a.toFixed(0)}</div><div class="l">Elo A</div></div>
-        <div class="stat"><div class="v">${d.elo_b.toFixed(0)}</div><div class="l">Elo B</div></div>
-        <div class="stat"><div class="v gold">${d.pick}</div><div class="l">Pick</div></div>
-      </div>
-    `;
+    stats = `<div class="stat-grid">
+      <div class="stat"><div class="v gold">${(d.confidence*100).toFixed(1)}%</div><div class="l">Win Probability</div></div>
+      <div class="stat"><div class="v">${d.elo_a.toFixed(0)}</div><div class="l">Elo A</div></div>
+      <div class="stat"><div class="v">${d.elo_b.toFixed(0)}</div><div class="l">Elo B</div></div>
+      <div class="stat"><div class="v gold">${d.pick}</div><div class="l">Model Pick</div></div></div>`;
   }
-
   document.getElementById("output").innerHTML = `
     <div class="fight-card">
       <div class="matchup">
-        <div class="fighter-block ${aWin ? '' : 'loser'}">
+        <div class="fighter-block ${aWin ? '' : 'loser'}" onclick="openFighter('${d.fighter_a.replace(/'/g, "\\'")}')">
           <div class="name">${d.fighter_a}</div>
-          <div class="elo">RED // ELO ${d.elo_a.toFixed(0)}</div>
+          <div class="elo">RED · ELO ${d.elo_a.toFixed(0)}</div>
           <div class="prob">${(d.p_a*100).toFixed(1)}%</div>
         </div>
         <div class="vs-spacer">VS</div>
-        <div class="fighter-block ${!aWin ? '' : 'loser'}">
+        <div class="fighter-block ${!aWin ? '' : 'loser'}" onclick="openFighter('${d.fighter_b.replace(/'/g, "\\'")}')">
           <div class="name">${d.fighter_b}</div>
-          <div class="elo">BLUE // ELO ${d.elo_b.toFixed(0)}</div>
+          <div class="elo">BLUE · ELO ${d.elo_b.toFixed(0)}</div>
           <div class="prob">${(d.p_b*100).toFixed(1)}%</div>
         </div>
       </div>
       <div class="prob-bar"><div class="fill" style="width:${d.p_a*100}%"></div></div>
-      ${recHtml}
-      ${stats}
-      <div class="shap-panel">
-        <div class="head">
-          <h3>Why This Pick?</h3>
-          <div class="ht">SHAP CONTRIBUTIONS // GREEN = FAVORS A, RED = FAVORS B</div>
-        </div>
-        ${shapHtml}
-      </div>
-    </div>
-  `;
+      ${recHtml}${stats}
+      <div class="shap-panel"><div class="head"><h3>Why This Read</h3><div class="ht">SHAP · GREEN FAVORS A · RED FAVORS B</div></div>${shapHtml}</div>
+      <div style="text-align: center; margin-top: 18px; font-size: 11px; color: var(--muted-2); font-family: 'JetBrains Mono', monospace; letter-spacing: 0.1em; font-weight: 500;">CLICK FIGHTER NAME FOR FULL PROFILE →</div>
+    </div>`;
 }
 
-// --- Card mode ---
 document.getElementById("add-fight").addEventListener("click", () => {
   const fa = document.getElementById("cfa").value.trim();
   const fb = document.getElementById("cfb").value.trim();
   const oa = document.getElementById("coa").value;
   const ob = document.getElementById("cob").value;
   if (!fa || !fb) return showToast("Pick both fighters");
-  const fight = {fighter_a: fa, fighter_b: fb};
+  const fight = { fighter_a: fa, fighter_b: fb };
   if (oa) fight.odds_a = parseInt(oa);
   if (ob) fight.odds_b = parseInt(ob);
   cardFights.push(fight);
   renderCardList();
-  document.getElementById("cfa").value = "";
-  document.getElementById("cfb").value = "";
-  document.getElementById("coa").value = "";
-  document.getElementById("cob").value = "";
+  ["cfa","cfb","coa","cob"].forEach(id => document.getElementById(id).value = "");
 });
 
 function renderCardList() {
   const el = document.getElementById("card-list");
   if (!cardFights.length) { el.innerHTML = ""; return; }
-  el.innerHTML = `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Card // ${cardFights.length} fights</div>` +
-    cardFights.map((f, i) => `
-      <div class="card-row">
-        <div class="rank">${i+1}</div>
-        <div class="matchup-mini">${f.fighter_a} vs ${f.fighter_b}</div>
-        <div></div>
-        <div class="ev-tag bad">${f.odds_a||'?'} / ${f.odds_b||'?'}</div>
-        <div style="cursor:pointer;color:var(--red)" onclick="cardFights.splice(${i},1); renderCardList()">×</div>
-      </div>`
-    ).join("");
+  el.innerHTML = `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:10px;font-weight:600">Card · ${cardFights.length} fights</div>` +
+    cardFights.map((f, i) => `<div class="card-row"><div class="rank">${i+1}</div><div class="matchup-mini">${f.fighter_a} vs ${f.fighter_b}</div><div></div><div class="ev-tag bad">${f.odds_a||'?'} / ${f.odds_b||'?'}</div><div class="x-btn" onclick="cardFights.splice(${i},1); renderCardList()">×</div></div>`).join("");
 }
 
-// --- Load next UFC card ---
 document.getElementById("load-upcoming").addEventListener("click", async () => {
   const btn = document.getElementById("load-upcoming");
   btn.textContent = "FETCHING...";
@@ -970,16 +1084,12 @@ document.getElementById("load-upcoming").addEventListener("click", async () => {
   try {
     const res = await fetch(API + "/api/upcoming");
     const data = await res.json();
-    if (!data.event) { showToast("No upcoming event found"); return; }
-    cardFights = data.fights.map(f => ({
-      fighter_a: f.fighter_a,
-      fighter_b: f.fighter_b,
-      weight_class: f.weight_class,
-    }));
+    if (!data.event || !data.fights.length) { showToast("No upcoming event found"); return; }
+    cardFights = data.fights.map(f => ({ fighter_a: f.fighter_a, fighter_b: f.fighter_b, weight_class: f.weight_class }));
     renderCardList();
-    showToast(`Loaded ${data.event.name} — ${data.fights.length} fights. Add odds + run card.`);
+    showToast(`Loaded ${data.event.name} — ${data.fights.length} fights`);
   } catch(e) {
-    showToast("Couldn't reach upcoming-events feed");
+    showToast("Couldn't fetch upcoming event");
   } finally {
     btn.textContent = "LOAD NEXT UFC CARD";
     btn.disabled = false;
@@ -989,40 +1099,108 @@ document.getElementById("load-upcoming").addEventListener("click", async () => {
 document.getElementById("run-card").addEventListener("click", async () => {
   if (!cardFights.length) return showToast("Add fights first");
   const out = document.getElementById("card-output");
-  out.innerHTML = `<div class="placeholder"><div class="big">CALCULATING CARD...</div></div>`;
+  out.innerHTML = `<div class="placeholder"><div class="big">ANALYZING CARD...</div></div>`;
   try {
-    const res = await fetch(API + "/api/card", {
-      method: "POST",
-      headers: {"Content-Type": "application/json"},
-      body: JSON.stringify({fights: cardFights, bankroll: parseFloat(document.getElementById("bankroll").value || "1000")}),
-    });
+    const res = await fetch(API + "/api/card", { method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify({fights: cardFights, bankroll: parseFloat(document.getElementById("bankroll").value || "1000")}) });
     const data = await res.json();
-    out.innerHTML = `
-      <div class="panel">
-        <h2><span class="num">04</span> Picks Ranked by EV</h2>
-        ${data.card.map((item, i) => {
-          const p = item.prediction;
-          const isBet = p.recommendation && p.recommendation.startsWith("BET");
-          const stake = Math.max(p.kelly_stake_a||0, p.kelly_stake_b||0);
-          return `
-            <div class="card-row">
-              <div class="rank">${i+1}</div>
-              <div class="matchup-mini">
-                <strong>${p.pick}</strong> vs ${p.pick === p.fighter_a ? p.fighter_b : p.fighter_a}
-                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-top:4px">${(p.confidence*100).toFixed(1)}% MODEL // ${p.market_p_a !== null ? ((p.pick===p.fighter_a ? p.market_p_a : p.market_p_b)*100).toFixed(1)+'% MARKET' : 'NO ODDS'}</div>
-              </div>
-              <div></div>
-              <div class="ev-tag ${item.best_ev > 0 ? 'good' : 'bad'}">EV ${item.best_ev > 0 ? '+' : ''}${(item.best_ev*100).toFixed(1)}%</div>
-              <div class="stake">${isBet ? '$'+stake.toFixed(0) : 'PASS'}</div>
-            </div>
-          `;
-        }).join("")}
-      </div>
-    `;
+    out.innerHTML = `<div class="panel"><h2><span class="num">04</span> Picks Ranked by EV</h2>${data.card.map((item, i) => {
+      const p = item.prediction;
+      const isBet = p.recommendation && p.recommendation.startsWith("BET");
+      const stake = Math.max(p.kelly_stake_a||0, p.kelly_stake_b||0);
+      return `<div class="card-row"><div class="rank">${i+1}</div><div class="matchup-mini"><strong>${p.pick}</strong> vs ${p.pick === p.fighter_a ? p.fighter_b : p.fighter_a}<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-top:4px;font-weight:500">${(p.confidence*100).toFixed(1)}% MODEL · ${p.market_p_a !== null ? ((p.pick===p.fighter_a ? p.market_p_a : p.market_p_b)*100).toFixed(1)+'% MARKET' : 'NO ODDS'}</div></div><div></div><div class="ev-tag ${item.best_ev > 0 ? 'good' : 'bad'}">EV ${item.best_ev > 0 ? '+' : ''}${(item.best_ev*100).toFixed(1)}%</div><div class="stake">${isBet ? '$'+stake.toFixed(0) : 'PASS'}</div></div>`;
+    }).join("")}</div>`;
   } catch(e) {
-    out.innerHTML = `<div class="placeholder"><div class="big" style="color:var(--red)">ERROR</div><div>${e.message}</div></div>`;
+    out.innerHTML = `<div class="placeholder"><div class="big" style="color:var(--red)">ERROR</div></div>`;
   }
 });
+
+function renderBacktest(b) {
+  const profit = b.total_pl, roi = b.roi_pct;
+  const yearsHtml = Object.entries(b.yearly).map(([y, s]) => {
+    const profitClass = s.profit >= 0 ? 'pos' : 'neg';
+    return `<tr><td>${y}</td><td>${s.bets}</td><td>${(s.win_rate*100).toFixed(1)}%</td><td class="${profitClass}">${s.profit >= 0 ? '+' : ''}$${s.profit.toFixed(2)}</td></tr>`;
+  }).join("");
+  const points = b.history.slice(0, 1500);
+  const xMax = Math.max(points.length - 1, 1);
+  const yVals = points.map(p => p.bankroll);
+  const yMin = Math.min(...yVals);
+  const yMax = Math.max(...yVals);
+  const yRange = yMax - yMin || 1;
+  const W = 100, H = 40;
+  const pathStr = points.map((p, i) =>
+    `${i === 0 ? 'M' : 'L'} ${(i/xMax*W).toFixed(2)} ${(H - (p.bankroll - yMin)/yRange * H).toFixed(2)}`
+  ).join(' ');
+  const startBR = b.starting_bankroll;
+  const startY = H - (startBR - yMin)/yRange * H;
+
+  const html = `
+    <div class="backtest-grid">
+      <div class="bt-card"><div class="v" style="color: ${profit >= 0 ? 'var(--green)' : 'var(--red-glow)'}">${profit >= 0 ? '+' : ''}$${Math.round(profit)}</div><div class="l">Total P&L</div></div>
+      <div class="bt-card"><div class="v" style="color: ${roi >= 0 ? 'var(--green)' : 'var(--red-glow)'}">${roi >= 0 ? '+' : ''}${roi.toFixed(2)}%</div><div class="l">ROI</div></div>
+      <div class="bt-card"><div class="v" style="background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent">${(b.win_rate*100).toFixed(1)}%</div><div class="l">Pick Win Rate</div></div>
+      <div class="bt-card"><div class="v">${b.bets_placed}</div><div class="l">Bets Simulated</div></div>
+      <div class="bt-card"><div class="v" style="color:var(--red-glow)">-${b.max_drawdown_pct.toFixed(1)}%</div><div class="l">Max Drawdown</div></div>
+      <div class="bt-card"><div class="v" style="color:var(--gold)">$${Math.round(b.peak_bankroll)}</div><div class="l">Peak Bankroll</div></div>
+    </div>
+
+    <div class="bt-chart">
+      <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:12px;font-weight:600">Bankroll over time · ${b.test_window}</div>
+      <svg viewBox="0 0 ${W} ${H}" preserveAspectRatio="none" style="width:100%;height:220px;display:block">
+        <line x1="0" x2="${W}" y1="${startY}" y2="${startY}" stroke="var(--muted)" stroke-width="0.2" stroke-dasharray="1 1"/>
+        <path d="${pathStr}" stroke="${profit >= 0 ? 'var(--green)' : 'var(--red-glow)'}" stroke-width="0.6" fill="none" vector-effect="non-scaling-stroke"/>
+      </svg>
+      <div style="display:flex;justify-content:space-between;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);margin-top:10px;font-weight:500">
+        <span>$${b.starting_bankroll}</span>
+        <span style="color: ${profit >= 0 ? 'var(--green)' : 'var(--red-glow)'}">$${Math.round(b.final_bankroll)}</span>
+      </div>
+    </div>
+
+    <h3 style="font-family:'Bebas Neue',sans-serif;font-size:19px;letter-spacing:0.05em;margin-top:26px;margin-bottom:10px;font-weight:400">Year-by-Year</h3>
+    <table class="year-table">
+      <tr><th>Year</th><th>Bets</th><th>Win %</th><th>P&L</th></tr>
+      ${yearsHtml}
+    </table>
+  `;
+  document.getElementById("backtest-content").innerHTML = html;
+}
+
+async function openFighter(name) {
+  document.getElementById("modal-bg").classList.add("open");
+  document.getElementById("modal-content").innerHTML = `<div class="placeholder"><div class="big">Loading ${name}...</div></div>`;
+  try {
+    const res = await fetch(API + "/api/fighter/" + encodeURIComponent(name));
+    if (!res.ok) throw new Error("Fighter not found");
+    const f = await res.json();
+    const last5Html = f.record.last_5.length
+      ? `<div class="l5">${f.record.last_5.map(w => `<div class="pip ${w ? 'w' : 'l'}"></div>`).join('')}</div>`
+      : '<div style="color:var(--muted);font-size:12px">No data</div>';
+    document.getElementById("modal-content").innerHTML = `
+      <h2>${f.name}</h2>
+      <div class="modal-elo">ELO ${f.elo} · ${f.record.fights} FIGHTS · ${f.record.wins}W-${f.record.losses}L</div>
+      <div class="modal-section"><h4>Recent form (last 5)</h4>${last5Html}</div>
+      <div class="modal-section"><h4>Striking</h4><div class="modal-stats">
+        <div class="modal-stat"><div class="v">${f.striking.slpm}</div><div class="l">Strikes/Min</div></div>
+        <div class="modal-stat"><div class="v">${f.striking.sapm}</div><div class="l">Absorbed/Min</div></div>
+        <div class="modal-stat"><div class="v">${(f.striking.str_acc*100).toFixed(0)}%</div><div class="l">Accuracy</div></div>
+        <div class="modal-stat"><div class="v">${(f.striking.str_def*100).toFixed(0)}%</div><div class="l">Defense</div></div>
+        <div class="modal-stat"><div class="v">${f.striking.kd_per15}</div><div class="l">KD/15min</div></div>
+      </div></div>
+      <div class="modal-section"><h4>Grappling</h4><div class="modal-stats">
+        <div class="modal-stat"><div class="v">${f.grappling.td_per15}</div><div class="l">TD/15min</div></div>
+        <div class="modal-stat"><div class="v">${(f.grappling.td_acc*100).toFixed(0)}%</div><div class="l">TD Accuracy</div></div>
+        <div class="modal-stat"><div class="v">${(f.grappling.td_def*100).toFixed(0)}%</div><div class="l">TD Defense</div></div>
+        <div class="modal-stat"><div class="v">${(f.grappling.ctrl_pct*100).toFixed(0)}%</div><div class="l">Ctrl Time</div></div>
+        <div class="modal-stat"><div class="v">${f.grappling.sub_per15}</div><div class="l">Sub Att/15</div></div>
+      </div></div>
+      ${f.last_fight_date ? `<div style="text-align:center;font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--muted);letter-spacing:0.15em;margin-top:14px;font-weight:500">LAST FIGHT · ${f.last_fight_date}</div>` : ''}
+    `;
+  } catch(e) {
+    document.getElementById("modal-content").innerHTML = `<div class="placeholder"><div class="big" style="color:var(--red)">${e.message}</div></div>`;
+  }
+}
+function closeModal() { document.getElementById("modal-bg").classList.remove("open"); }
+document.getElementById("modal-bg").addEventListener("click", e => { if (e.target.id === "modal-bg") closeModal(); });
+document.addEventListener("keydown", e => { if (e.key === "Escape") closeModal(); });
 
 function showToast(msg) {
   const t = document.createElement("div");
