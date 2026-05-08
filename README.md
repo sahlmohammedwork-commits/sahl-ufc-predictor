@@ -1,3 +1,4 @@
+<!-- forcing fresh render deploy -->
 # Sahl UFC Predictor
 
 > Calibrated XGBoost on 24 engineered features. Produces win probabilities, expected value vs. the book, and Half-Kelly stake recommendations.
