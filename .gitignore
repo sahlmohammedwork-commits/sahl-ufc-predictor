@@ -1,0 +1,13 @@
+__pycache__/
+*.pyc
+.DS_Store
+.env
+.venv/
+venv/
+*.log
+nohup.out
+
+# Keep models so deploy doesn't have to re-train? Comment out next 3 if yes:
+# models/*.json
+# models/*.pkl
+# data/*.csv

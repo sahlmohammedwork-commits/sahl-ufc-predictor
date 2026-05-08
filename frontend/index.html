@@ -1,0 +1,1036 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Sahl UFC Predictor</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Archivo:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0a0a0c;
+  --bg-2: #111114;
+  --bg-3: #16161b;
+  --line: #26262e;
+  --ink: #f4f4f5;
+  --muted: #8a8a92;
+  --red: #e63946;
+  --red-glow: #ff4d5e;
+  --gold: #f4c430;
+  --green: #2ecc71;
+  --blue: #4cc9f0;
+  --grad: linear-gradient(135deg, #e63946 0%, #f4c430 100%);
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  background: var(--bg);
+  color: var(--ink);
+  font-family: 'Archivo', sans-serif;
+  font-size: 15px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
+}
+
+/* Grain background overlay */
+body::before {
+  content: "";
+  position: fixed; inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='200' height='200'%3E%3Cfilter id='n'%3E%3CfeTurbulence baseFrequency='0.9' numOctaves='2' /%3E%3CfeColorMatrix values='0 0 0 0 0  0 0 0 0 0  0 0 0 0 0  0 0 0 0.3 0'/%3E%3C/filter%3E%3Crect width='200' height='200' filter='url(%23n)' opacity='0.4'/%3E%3C/svg%3E");
+  pointer-events: none;
+  opacity: 0.5;
+  z-index: 1;
+  mix-blend-mode: overlay;
+}
+
+/* Subtle radial backlight */
+body::after {
+  content: "";
+  position: fixed;
+  top: -10%; left: 50%;
+  transform: translateX(-50%);
+  width: 1200px; height: 600px;
+  background: radial-gradient(ellipse at center, rgba(230,57,70,0.18) 0%, transparent 65%);
+  filter: blur(40px);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.wrap {
+  position: relative;
+  z-index: 2;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 32px 28px 80px;
+}
+
+/* ---------- HEADER ---------- */
+header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+  padding-bottom: 22px;
+  margin-bottom: 36px;
+}
+.brand {
+  display: flex;
+  align-items: baseline;
+  gap: 14px;
+}
+.brand .mark {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 38px;
+  letter-spacing: 0.04em;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  line-height: 1;
+}
+.brand .sub {
+  font-family: 'JetBrains Mono', monospace;
+  color: var(--muted);
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+.status {
+  display: flex;
+  gap: 22px;
+  align-items: center;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+.status .dot {
+  display: inline-block;
+  width: 7px; height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  margin-right: 6px;
+  box-shadow: 0 0 8px var(--green);
+  animation: pulse 2s ease-in-out infinite;
+}
+@keyframes pulse { 50% { opacity: 0.4; } }
+
+/* ---------- HERO STRIP ---------- */
+.hero {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 30px;
+  align-items: end;
+  margin-bottom: 38px;
+  padding-bottom: 30px;
+  border-bottom: 1px solid var(--line);
+}
+.hero h1 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: clamp(54px, 7vw, 96px);
+  letter-spacing: 0.01em;
+  line-height: 0.92;
+  text-transform: uppercase;
+}
+.hero h1 .accent {
+  color: var(--red);
+  position: relative;
+  display: inline-block;
+}
+.hero h1 .accent::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: 8%;
+  height: 3px;
+  background: var(--gold);
+}
+.hero .sub {
+  font-family: 'Archivo', sans-serif;
+  color: var(--muted);
+  font-size: 16px;
+  max-width: 540px;
+  margin-top: 14px;
+}
+.metrics-strip {
+  display: flex;
+  gap: 18px;
+}
+.metric {
+  text-align: right;
+  border-right: 1px solid var(--line);
+  padding-right: 18px;
+}
+.metric:last-child { border-right: none; padding-right: 0; }
+.metric .num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 46px;
+  line-height: 1;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.metric .lbl {
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  margin-top: 4px;
+}
+
+/* ---------- LAYOUT ---------- */
+.grid {
+  display: grid;
+  grid-template-columns: 420px 1fr;
+  gap: 30px;
+}
+@media (max-width: 980px) {
+  .grid { grid-template-columns: 1fr; }
+  .hero { grid-template-columns: 1fr; }
+  .metrics-strip { justify-content: flex-start; }
+}
+
+.panel {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 22px;
+}
+.panel h2 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  letter-spacing: 0.08em;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.panel h2 .num {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--red);
+  border: 1px solid var(--red);
+  padding: 2px 7px;
+  border-radius: 2px;
+  letter-spacing: 0.1em;
+}
+
+/* ---------- FORM ---------- */
+.form-row { margin-bottom: 14px; }
+.form-row label {
+  display: block;
+  font-family: 'JetBrains Mono', monospace;
+  text-transform: uppercase;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  margin-bottom: 6px;
+}
+.form-row input, .form-row select {
+  width: 100%;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  padding: 11px 12px;
+  font-family: 'Archivo', sans-serif;
+  font-size: 14px;
+  border-radius: 2px;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.form-row input:focus, .form-row select:focus {
+  outline: none;
+  border-color: var(--red);
+  box-shadow: 0 0 0 3px rgba(230,57,70,0.18);
+}
+.row-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+}
+.row-2 .form-row { margin-bottom: 0; }
+
+.btn {
+  width: 100%;
+  background: var(--grad);
+  color: #0a0a0c;
+  border: none;
+  padding: 14px;
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.1em;
+  border-radius: 2px;
+  cursor: pointer;
+  margin-top: 8px;
+  transition: transform 0.1s, box-shadow 0.2s;
+  position: relative;
+  overflow: hidden;
+}
+.btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 8px 24px rgba(230,57,70,0.4);
+}
+.btn:active { transform: translateY(0); }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ---------- PREDICTION OUTPUT ---------- */
+#output { min-height: 380px; }
+
+.placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 380px;
+  color: var(--muted);
+  text-align: center;
+  border: 2px dashed var(--line);
+  border-radius: 4px;
+}
+.placeholder svg { opacity: 0.3; margin-bottom: 14px; }
+.placeholder .big {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.05em;
+  color: var(--muted);
+}
+
+.fight-card {
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  border-radius: 4px;
+  padding: 26px;
+  position: relative;
+  overflow: hidden;
+}
+.fight-card::before {
+  content: "";
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 3px;
+  background: var(--grad);
+}
+
+.matchup {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 24px;
+  margin-bottom: 24px;
+}
+.fighter-block {
+  text-align: center;
+}
+.fighter-block .name {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 28px;
+  letter-spacing: 0.04em;
+  line-height: 1.1;
+  margin-bottom: 6px;
+}
+.fighter-block .elo {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+}
+.fighter-block .prob {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 56px;
+  line-height: 1;
+  margin-top: 12px;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+.fighter-block.loser .prob {
+  background: none;
+  -webkit-text-fill-color: var(--muted);
+  color: var(--muted);
+}
+.vs-spacer {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 36px;
+  color: var(--red);
+  letter-spacing: 0.1em;
+}
+
+/* prob bar */
+.prob-bar {
+  height: 8px;
+  background: var(--bg-3);
+  border-radius: 999px;
+  overflow: hidden;
+  margin-bottom: 22px;
+  position: relative;
+}
+.prob-bar .fill {
+  height: 100%;
+  background: var(--grad);
+  border-radius: 999px;
+  transition: width 0.6s cubic-bezier(.2,.8,.2,1);
+}
+
+/* stat row */
+.stat-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  margin-bottom: 22px;
+}
+@media (max-width: 600px) { .stat-grid { grid-template-columns: repeat(2, 1fr); } }
+.stat {
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  border-radius: 2px;
+  padding: 12px;
+  text-align: center;
+}
+.stat .v {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 26px;
+  line-height: 1;
+}
+.stat .v.good { color: var(--green); }
+.stat .v.bad { color: var(--red-glow); }
+.stat .v.gold { color: var(--gold); }
+.stat .l {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 9px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  margin-top: 4px;
+}
+
+/* recommendation banner */
+.rec {
+  padding: 16px 18px;
+  border-radius: 2px;
+  margin-bottom: 22px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  letter-spacing: 0.04em;
+  border-left: 3px solid;
+}
+.rec.bet {
+  background: rgba(46,204,113,0.08);
+  border-color: var(--green);
+  color: #a8f0c2;
+}
+.rec.pass {
+  background: rgba(138,138,146,0.08);
+  border-color: var(--muted);
+  color: var(--muted);
+}
+
+/* SHAP */
+.shap-panel { margin-top: 6px; }
+.shap-panel .head {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-bottom: 12px;
+}
+.shap-panel .head h3 {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  letter-spacing: 0.06em;
+}
+.shap-panel .head .ht {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.15em;
+}
+.shap-row {
+  display: grid;
+  grid-template-columns: 150px 1fr 60px;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+  font-size: 12px;
+}
+.shap-row .feat {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--ink);
+}
+.shap-row .barwrap {
+  position: relative;
+  height: 14px;
+  background: var(--bg-3);
+  border-radius: 1px;
+  overflow: hidden;
+}
+.shap-row .barwrap .center {
+  position: absolute;
+  left: 50%; top: 0; bottom: 0;
+  width: 1px;
+  background: var(--line);
+}
+.shap-row .bar {
+  position: absolute;
+  top: 0; bottom: 0;
+  height: 100%;
+}
+.shap-row .bar.pos { background: var(--green); left: 50%; }
+.shap-row .bar.neg { background: var(--red-glow); right: 50%; }
+.shap-row .val {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--muted);
+  text-align: right;
+}
+
+/* ---------- FIGHTER PICKER ---------- */
+.fighter-picker {
+  position: relative;
+}
+.fighter-list {
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  background: var(--bg-3);
+  border: 1px solid var(--line);
+  max-height: 220px;
+  overflow-y: auto;
+  z-index: 10;
+  display: none;
+}
+.fighter-list.open { display: block; }
+.fighter-list .item {
+  padding: 8px 12px;
+  cursor: pointer;
+  font-size: 13px;
+  display: flex;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--bg-2);
+}
+.fighter-list .item:hover { background: var(--bg); }
+.fighter-list .item .elo-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--gold);
+}
+
+/* ---------- CARD MODE ---------- */
+.tabs {
+  display: flex;
+  border-bottom: 1px solid var(--line);
+  margin-bottom: 20px;
+}
+.tab {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 16px;
+  letter-spacing: 0.1em;
+  padding: 12px 18px;
+  cursor: pointer;
+  color: var(--muted);
+  position: relative;
+}
+.tab.active { color: var(--ink); }
+.tab.active::after {
+  content: "";
+  position: absolute;
+  left: 0; right: 0; bottom: -1px;
+  height: 2px;
+  background: var(--red);
+}
+
+.card-row {
+  display: grid;
+  grid-template-columns: 30px 1fr auto auto auto;
+  align-items: center;
+  gap: 16px;
+  padding: 14px;
+  border: 1px solid var(--line);
+  background: var(--bg-2);
+  border-radius: 2px;
+  margin-bottom: 8px;
+}
+.card-row .rank {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 22px;
+  color: var(--gold);
+}
+.card-row .matchup-mini {
+  font-family: 'Archivo', sans-serif;
+  font-size: 13px;
+}
+.card-row .matchup-mini strong { color: var(--green); font-weight: 700; }
+.card-row .ev-tag {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  padding: 4px 10px;
+  border-radius: 2px;
+  letter-spacing: 0.05em;
+}
+.card-row .ev-tag.good { background: rgba(46,204,113,0.15); color: var(--green); }
+.card-row .ev-tag.bad { background: rgba(138,138,146,0.15); color: var(--muted); }
+.card-row .stake {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 18px;
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+
+/* ---------- TOAST ---------- */
+.toast {
+  position: fixed;
+  bottom: 24px; right: 24px;
+  background: var(--bg-2);
+  border: 1px solid var(--line);
+  padding: 14px 20px;
+  border-radius: 2px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  z-index: 100;
+  animation: slideIn 0.3s ease-out;
+  border-left: 3px solid var(--red);
+}
+@keyframes slideIn {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+footer {
+  margin-top: 60px;
+  padding-top: 24px;
+  border-top: 1px solid var(--line);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: var(--muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  display: flex;
+  justify-content: space-between;
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header>
+  <div class="brand">
+    <div class="mark">Sahl</div>
+    <div class="sub">// UFC Predictor v1.0</div>
+  </div>
+  <div class="status">
+    <span><span class="dot"></span>Model Online</span>
+    <span id="model-acc">Acc <strong style="color:var(--ink)">--</strong></span>
+    <span id="model-auc">AUC <strong style="color:var(--ink)">--</strong></span>
+  </div>
+</header>
+
+<div class="hero">
+  <div>
+    <h1>Predict.<br><span class="accent">Calibrate.</span><br>Profit.</h1>
+    <p class="sub">Calibrated XGBoost on 24 engineered features including Elo ratings, striking and grappling composites. Outputs win probability, expected value, and Half-Kelly stake recommendations against the book.</p>
+  </div>
+  <div class="metrics-strip">
+    <div class="metric"><div class="num" id="m-fights">--</div><div class="lbl">Fights Trained</div></div>
+    <div class="metric"><div class="num" id="m-fighters">--</div><div class="lbl">Fighters</div></div>
+    <div class="metric"><div class="num" id="m-features">24</div><div class="lbl">Features</div></div>
+  </div>
+</div>
+
+<div class="tabs">
+  <div class="tab active" data-tab="single">Single Fight</div>
+  <div class="tab" data-tab="card">Full Card</div>
+</div>
+
+<!-- SINGLE FIGHT TAB -->
+<div id="tab-single" class="tab-content">
+<div class="grid">
+  <!-- INPUT PANEL -->
+  <div class="panel">
+    <h2><span class="num">01</span> Matchup</h2>
+
+    <div class="row-2">
+      <div class="form-row fighter-picker">
+        <label>Fighter A (Red Corner)</label>
+        <input id="fa" autocomplete="off" placeholder="Type to search...">
+        <div class="fighter-list" id="fa-list"></div>
+      </div>
+      <div class="form-row fighter-picker">
+        <label>Fighter B (Blue Corner)</label>
+        <input id="fb" autocomplete="off" placeholder="Type to search...">
+        <div class="fighter-list" id="fb-list"></div>
+      </div>
+    </div>
+
+    <div class="form-row">
+      <label>Weight Class</label>
+      <select id="wc">
+        <option>Strawweight</option><option>Flyweight</option>
+        <option>Bantamweight</option><option>Featherweight</option>
+        <option selected>Lightweight</option><option>Welterweight</option>
+        <option>Middleweight</option><option>Light Heavyweight</option>
+        <option>Heavyweight</option>
+      </select>
+    </div>
+
+    <div class="row-2">
+      <div class="form-row">
+        <label>Title Bout?</label>
+        <select id="title"><option value="0">No</option><option value="1">Yes</option></select>
+      </div>
+      <div class="form-row">
+        <label>Bankroll ($)</label>
+        <input id="bankroll" type="number" value="1000">
+      </div>
+    </div>
+
+    <h2 style="margin-top:24px"><span class="num">02</span> Market Odds</h2>
+    <div class="row-2">
+      <div class="form-row">
+        <label>Odds A (American)</label>
+        <input id="oa" type="number" placeholder="-150">
+      </div>
+      <div class="form-row">
+        <label>Odds B (American)</label>
+        <input id="ob" type="number" placeholder="+130">
+      </div>
+    </div>
+
+    <button class="btn" id="run">RUN PREDICTION</button>
+  </div>
+
+  <!-- OUTPUT PANEL -->
+  <div id="output">
+    <div class="placeholder">
+      <svg width="80" height="80" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <path d="M12 2L4 7v10l8 5 8-5V7l-8-5z"/>
+        <path d="M12 22V12M12 12L4 7M12 12l8-5"/>
+      </svg>
+      <div class="big">Awaiting Matchup</div>
+      <div style="font-size:13px;margin-top:6px">Pick two fighters, enter market odds.</div>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- CARD TAB -->
+<div id="tab-card" class="tab-content" style="display:none">
+<div class="panel" style="margin-bottom:20px">
+  <h2><span class="num">03</span> Full Card Builder</h2>
+  <p style="color:var(--muted);font-size:13px;margin-bottom:16px">
+    Add fights one by one. Hit Run Card to rank picks by Expected Value.
+  </p>
+  <div class="row-2">
+    <div class="form-row fighter-picker">
+      <label>Fighter A</label>
+      <input id="cfa" autocomplete="off" placeholder="Search...">
+      <div class="fighter-list" id="cfa-list"></div>
+    </div>
+    <div class="form-row fighter-picker">
+      <label>Fighter B</label>
+      <input id="cfb" autocomplete="off" placeholder="Search...">
+      <div class="fighter-list" id="cfb-list"></div>
+    </div>
+  </div>
+  <div class="row-2">
+    <div class="form-row"><label>Odds A</label><input id="coa" type="number" placeholder="-150"></div>
+    <div class="form-row"><label>Odds B</label><input id="cob" type="number" placeholder="+130"></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
+    <button class="btn" id="add-fight" style="background:var(--bg-3);color:var(--ink);border:1px solid var(--line)">ADD TO CARD</button>
+    <button class="btn" id="load-upcoming" style="background:var(--bg-3);color:var(--gold);border:1px solid var(--gold)">LOAD NEXT UFC CARD</button>
+  </div>
+  <div id="card-list" style="margin-top:16px"></div>
+  <button class="btn" id="run-card" style="margin-top:14px">RUN FULL CARD</button>
+</div>
+<div id="card-output"></div>
+</div>
+
+<footer>
+  <span>SAHL UFC PREDICTOR // CALIBRATED XGBOOST</span>
+  <span id="server-info">Half-Kelly • 5% Bankroll Cap</span>
+</footer>
+
+</div>
+
+<script>
+// Use same origin as the page (works locally + when deployed)
+const API = "";
+let FIGHTERS = [];
+let cardFights = [];
+
+// --- Init ---
+async function init() {
+  try {
+    const [fighters, metrics] = await Promise.all([
+      fetch(API + "/api/fighters?limit=5000").then(r => r.json()),
+      fetch(API + "/api/metrics").then(r => r.json()).catch(() => ({})),
+    ]);
+    FIGHTERS = fighters;
+    document.getElementById("m-fighters").textContent = fighters.length.toLocaleString();
+    if (metrics.calibrated) {
+      document.getElementById("model-acc").innerHTML = "Acc <strong style='color:var(--ink)'>" + (metrics.calibrated.acc * 100).toFixed(1) + "%</strong>";
+      document.getElementById("model-auc").innerHTML = "AUC <strong style='color:var(--ink)'>" + metrics.calibrated.auc.toFixed(3) + "</strong>";
+      document.getElementById("m-fights").textContent = (metrics.test_n * 7).toLocaleString();  // approx full-set size
+    }
+  } catch(e) {
+    showToast("Backend offline — start server.py first");
+  }
+}
+init();
+
+// --- Tabs ---
+document.querySelectorAll(".tab").forEach(t => {
+  t.addEventListener("click", () => {
+    document.querySelectorAll(".tab").forEach(x => x.classList.remove("active"));
+    t.classList.add("active");
+    document.querySelectorAll(".tab-content").forEach(x => x.style.display = "none");
+    document.getElementById("tab-" + t.dataset.tab).style.display = "block";
+  });
+});
+
+// --- Fighter picker ---
+function attachPicker(inputId, listId) {
+  const inp = document.getElementById(inputId);
+  const lst = document.getElementById(listId);
+  inp.addEventListener("input", () => {
+    const q = inp.value.toLowerCase();
+    if (q.length < 1) { lst.classList.remove("open"); return; }
+    const matches = FIGHTERS.filter(f => f.name.toLowerCase().includes(q)).slice(0, 12);
+    lst.innerHTML = matches.map(f =>
+      `<div class="item" data-name="${f.name}"><span>${f.name}</span><span class="elo-tag">Elo ${f.elo}</span></div>`
+    ).join("");
+    lst.classList.add("open");
+    lst.querySelectorAll(".item").forEach(item => {
+      item.addEventListener("click", () => {
+        inp.value = item.dataset.name;
+        lst.classList.remove("open");
+      });
+    });
+  });
+  inp.addEventListener("blur", () => setTimeout(() => lst.classList.remove("open"), 200));
+}
+["fa", "fb", "cfa", "cfb"].forEach(id => attachPicker(id, id + "-list"));
+
+// --- Single prediction ---
+document.getElementById("run").addEventListener("click", async () => {
+  const fa = document.getElementById("fa").value.trim();
+  const fb = document.getElementById("fb").value.trim();
+  if (!fa || !fb) return showToast("Pick both fighters");
+  const payload = {
+    fighter_a: fa,
+    fighter_b: fb,
+    weight_class: document.getElementById("wc").value,
+    title_bout: parseInt(document.getElementById("title").value),
+    bankroll: parseFloat(document.getElementById("bankroll").value || "1000"),
+  };
+  const oa = document.getElementById("oa").value;
+  const ob = document.getElementById("ob").value;
+  if (oa) payload.odds_a = parseInt(oa);
+  if (ob) payload.odds_b = parseInt(ob);
+
+  document.getElementById("output").innerHTML = `<div class="placeholder"><div class="big">CALCULATING...</div></div>`;
+  try {
+    const res = await fetch(API + "/api/predict", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify(payload),
+    });
+    if (!res.ok) throw new Error(res.status);
+    const data = await res.json();
+    renderPrediction(data);
+  } catch(e) {
+    document.getElementById("output").innerHTML = `<div class="placeholder"><div class="big" style="color:var(--red)">ERROR</div><div>${e.message}</div></div>`;
+  }
+});
+
+function renderPrediction(d) {
+  const aWin = d.p_a > d.p_b;
+  const A = aWin ? d : null;
+  const fightStats = "";
+
+  let recHtml = "";
+  if (d.recommendation) {
+    const isBet = d.recommendation.startsWith("BET");
+    recHtml = `<div class="rec ${isBet ? 'bet' : 'pass'}">${d.recommendation}</div>`;
+  }
+
+  // SHAP-style bars
+  let shapHtml = "";
+  if (d.explanations && d.explanations.length) {
+    const maxAbs = Math.max(...d.explanations.map(e => Math.abs(e.shap)));
+    shapHtml = d.explanations.map(e => {
+      const pct = Math.abs(e.shap) / maxAbs * 50;  // % of half-bar
+      const isPos = e.shap > 0;
+      return `
+        <div class="shap-row">
+          <div class="feat">${e.feature}</div>
+          <div class="barwrap">
+            <div class="center"></div>
+            <div class="bar ${isPos ? 'pos' : 'neg'}" style="width:${pct}%"></div>
+          </div>
+          <div class="val">${e.shap >= 0 ? '+' : ''}${e.shap.toFixed(2)}</div>
+        </div>`;
+    }).join("");
+  }
+
+  // Stat tiles
+  let stats = "";
+  if (d.market_p_a !== null && d.market_p_a !== undefined) {
+    const edge = aWin ? d.edge_a : d.edge_b;
+    const ev = aWin ? d.ev_a : d.ev_b;
+    const stake = aWin ? d.kelly_stake_a : d.kelly_stake_b;
+    stats = `
+      <div class="stat-grid">
+        <div class="stat"><div class="v gold">${(d.confidence*100).toFixed(1)}%</div><div class="l">Win Probability</div></div>
+        <div class="stat"><div class="v ${edge > 0 ? 'good' : 'bad'}">${(edge*100).toFixed(1)}</div><div class="l">Edge (pts)</div></div>
+        <div class="stat"><div class="v ${ev > 0 ? 'good' : 'bad'}">${ev > 0 ? '+' : ''}${(ev*100).toFixed(1)}%</div><div class="l">Expected Value</div></div>
+        <div class="stat"><div class="v gold">$${stake?.toFixed(0) || '0'}</div><div class="l">Kelly Stake</div></div>
+      </div>
+    `;
+  } else {
+    stats = `
+      <div class="stat-grid">
+        <div class="stat"><div class="v gold">${(d.confidence*100).toFixed(1)}%</div><div class="l">Win Probability</div></div>
+        <div class="stat"><div class="v">${d.elo_a.toFixed(0)}</div><div class="l">Elo A</div></div>
+        <div class="stat"><div class="v">${d.elo_b.toFixed(0)}</div><div class="l">Elo B</div></div>
+        <div class="stat"><div class="v gold">${d.pick}</div><div class="l">Pick</div></div>
+      </div>
+    `;
+  }
+
+  document.getElementById("output").innerHTML = `
+    <div class="fight-card">
+      <div class="matchup">
+        <div class="fighter-block ${aWin ? '' : 'loser'}">
+          <div class="name">${d.fighter_a}</div>
+          <div class="elo">RED // ELO ${d.elo_a.toFixed(0)}</div>
+          <div class="prob">${(d.p_a*100).toFixed(1)}%</div>
+        </div>
+        <div class="vs-spacer">VS</div>
+        <div class="fighter-block ${!aWin ? '' : 'loser'}">
+          <div class="name">${d.fighter_b}</div>
+          <div class="elo">BLUE // ELO ${d.elo_b.toFixed(0)}</div>
+          <div class="prob">${(d.p_b*100).toFixed(1)}%</div>
+        </div>
+      </div>
+      <div class="prob-bar"><div class="fill" style="width:${d.p_a*100}%"></div></div>
+      ${recHtml}
+      ${stats}
+      <div class="shap-panel">
+        <div class="head">
+          <h3>Why This Pick?</h3>
+          <div class="ht">SHAP CONTRIBUTIONS // GREEN = FAVORS A, RED = FAVORS B</div>
+        </div>
+        ${shapHtml}
+      </div>
+    </div>
+  `;
+}
+
+// --- Card mode ---
+document.getElementById("add-fight").addEventListener("click", () => {
+  const fa = document.getElementById("cfa").value.trim();
+  const fb = document.getElementById("cfb").value.trim();
+  const oa = document.getElementById("coa").value;
+  const ob = document.getElementById("cob").value;
+  if (!fa || !fb) return showToast("Pick both fighters");
+  const fight = {fighter_a: fa, fighter_b: fb};
+  if (oa) fight.odds_a = parseInt(oa);
+  if (ob) fight.odds_b = parseInt(ob);
+  cardFights.push(fight);
+  renderCardList();
+  document.getElementById("cfa").value = "";
+  document.getElementById("cfb").value = "";
+  document.getElementById("coa").value = "";
+  document.getElementById("cob").value = "";
+});
+
+function renderCardList() {
+  const el = document.getElementById("card-list");
+  if (!cardFights.length) { el.innerHTML = ""; return; }
+  el.innerHTML = `<div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.15em;text-transform:uppercase;margin-bottom:8px">Card // ${cardFights.length} fights</div>` +
+    cardFights.map((f, i) => `
+      <div class="card-row">
+        <div class="rank">${i+1}</div>
+        <div class="matchup-mini">${f.fighter_a} vs ${f.fighter_b}</div>
+        <div></div>
+        <div class="ev-tag bad">${f.odds_a||'?'} / ${f.odds_b||'?'}</div>
+        <div style="cursor:pointer;color:var(--red)" onclick="cardFights.splice(${i},1); renderCardList()">×</div>
+      </div>`
+    ).join("");
+}
+
+// --- Load next UFC card ---
+document.getElementById("load-upcoming").addEventListener("click", async () => {
+  const btn = document.getElementById("load-upcoming");
+  btn.textContent = "FETCHING...";
+  btn.disabled = true;
+  try {
+    const res = await fetch(API + "/api/upcoming");
+    const data = await res.json();
+    if (!data.event) { showToast("No upcoming event found"); return; }
+    cardFights = data.fights.map(f => ({
+      fighter_a: f.fighter_a,
+      fighter_b: f.fighter_b,
+      weight_class: f.weight_class,
+    }));
+    renderCardList();
+    showToast(`Loaded ${data.event.name} — ${data.fights.length} fights. Add odds + run card.`);
+  } catch(e) {
+    showToast("Couldn't reach upcoming-events feed");
+  } finally {
+    btn.textContent = "LOAD NEXT UFC CARD";
+    btn.disabled = false;
+  }
+});
+
+document.getElementById("run-card").addEventListener("click", async () => {
+  if (!cardFights.length) return showToast("Add fights first");
+  const out = document.getElementById("card-output");
+  out.innerHTML = `<div class="placeholder"><div class="big">CALCULATING CARD...</div></div>`;
+  try {
+    const res = await fetch(API + "/api/card", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({fights: cardFights, bankroll: parseFloat(document.getElementById("bankroll").value || "1000")}),
+    });
+    const data = await res.json();
+    out.innerHTML = `
+      <div class="panel">
+        <h2><span class="num">04</span> Picks Ranked by EV</h2>
+        ${data.card.map((item, i) => {
+          const p = item.prediction;
+          const isBet = p.recommendation && p.recommendation.startsWith("BET");
+          const stake = Math.max(p.kelly_stake_a||0, p.kelly_stake_b||0);
+          return `
+            <div class="card-row">
+              <div class="rank">${i+1}</div>
+              <div class="matchup-mini">
+                <strong>${p.pick}</strong> vs ${p.pick === p.fighter_a ? p.fighter_b : p.fighter_a}
+                <div style="font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--muted);letter-spacing:0.1em;margin-top:4px">${(p.confidence*100).toFixed(1)}% MODEL // ${p.market_p_a !== null ? ((p.pick===p.fighter_a ? p.market_p_a : p.market_p_b)*100).toFixed(1)+'% MARKET' : 'NO ODDS'}</div>
+              </div>
+              <div></div>
+              <div class="ev-tag ${item.best_ev > 0 ? 'good' : 'bad'}">EV ${item.best_ev > 0 ? '+' : ''}${(item.best_ev*100).toFixed(1)}%</div>
+              <div class="stake">${isBet ? '$'+stake.toFixed(0) : 'PASS'}</div>
+            </div>
+          `;
+        }).join("")}
+      </div>
+    `;
+  } catch(e) {
+    out.innerHTML = `<div class="placeholder"><div class="big" style="color:var(--red)">ERROR</div><div>${e.message}</div></div>`;
+  }
+});
+
+function showToast(msg) {
+  const t = document.createElement("div");
+  t.className = "toast";
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(() => t.remove(), 3000);
+}
+</script>
+</body>
+</html>
