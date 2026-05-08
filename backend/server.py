@@ -308,13 +308,13 @@ def metrics():
 
 @app.get("/api/upcoming")
 def upcoming():
-    """Fetch the next scheduled UFC event + matchups from ufcstats.com."""
+    """Fetch the next scheduled UFC event + matchups + live odds via The Odds API."""
     try:
-        from upcoming import get_upcoming_card
-        return get_upcoming_card()
+        from odds_api import fetch_upcoming_with_odds
+        return fetch_upcoming_with_odds()
     except Exception as e:
         log.warning("Upcoming fetch failed: %s", e)
-        return {"event": None, "fights": [], "error": str(e)}
+        return {"event": None, "fights": [], "error": str(e), "source": "none"}
 
 
 @app.get("/api/backtest")
